@@ -2,5 +2,300 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { color-scheme: light; }
-body { margin: 0; background: #f8fafc; }
+/* ASR Iron Store — Extej-inspired light dashboard theme
+   Visual direction from the reference image:
+   - airy white/lavender background
+   - glass-like cards
+   - soft shadows
+   - red ASR brand accent
+   - limited electric-blue only for selected/primary actions
+*/
+
+:root {
+  color-scheme: light;
+  --asr-bg-1: #f7f9ff;
+  --asr-bg-2: #eef3ff;
+  --asr-bg-3: #ffffff;
+  --asr-card: rgba(255, 255, 255, 0.88);
+  --asr-card-solid: #ffffff;
+  --asr-border: #e6ecf8;
+  --asr-text: #111827;
+  --asr-muted: #8190a8;
+  --asr-primary: #3f6df6;
+  --asr-primary-dark: #2750d8;
+  --asr-primary-soft: #edf3ff;
+  --asr-brand-red: #e3343f;
+  --asr-brand-red-dark: #c91f2d;
+  --asr-success: #10b981;
+  --asr-danger: #ef4444;
+  --asr-warning: #f59e0b;
+  --asr-shadow: 0 18px 45px rgba(91, 111, 155, 0.16);
+  --asr-soft-shadow: 0 10px 26px rgba(91, 111, 155, 0.10);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--asr-text);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.82), rgba(242,246,255,0.86)),
+    radial-gradient(circle at 12% 8%, rgba(63,109,246,0.16), transparent 28rem),
+    radial-gradient(circle at 85% 10%, rgba(227,52,63,0.08), transparent 24rem),
+    linear-gradient(180deg, var(--asr-bg-1), var(--asr-bg-2));
+  background-attachment: fixed;
+}
+
+/* Subtle geometric dashboard feel */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(135deg, transparent 0 44%, rgba(63,109,246,0.045) 44% 45%, transparent 45% 100%),
+    linear-gradient(45deg, transparent 0 47%, rgba(255,255,255,0.75) 47% 48%, transparent 48% 100%);
+  background-size: 260px 260px, 320px 320px;
+  opacity: 0.85;
+  z-index: -1;
+}
+
+/* Page background replacements */
+.bg-slate-100,
+.bg-slate-50 {
+  background: transparent !important;
+}
+
+/* Main cards */
+.bg-white,
+section.bg-white,
+form.bg-white,
+div.bg-white.border {
+  background: var(--asr-card) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.border,
+.border-slate-200,
+.border-slate-100 {
+  border-color: var(--asr-border) !important;
+}
+
+.shadow,
+.shadow-sm,
+.shadow-lg,
+.shadow-xl {
+  box-shadow: var(--asr-soft-shadow) !important;
+}
+
+.rounded-3xl {
+  border-radius: 1.35rem !important;
+}
+
+.rounded-2xl {
+  border-radius: 1rem !important;
+}
+
+/* Header: clean white dashboard bar */
+header.bg-white,
+.sticky.top-0.bg-white {
+  background: rgba(255,255,255,0.90) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 12px 26px rgba(91,111,155,0.09) !important;
+}
+
+/* Brand/logo area */
+img[alt*='ASR'], img[alt*='logo'] {
+  filter: drop-shadow(0 8px 14px rgba(227,52,63,0.15));
+}
+
+/* Primary actions: blue like the selected left nav in reference */
+.bg-blue-600,
+.bg-blue-700,
+.bg-indigo-600,
+.bg-indigo-700,
+.bg-indigo-800,
+.bg-indigo-900 {
+  background: linear-gradient(135deg, #5d83ff, #315be8) !important;
+  box-shadow: 0 10px 22px rgba(63,109,246,0.24) !important;
+}
+
+.hover\:bg-blue-700:hover,
+.hover\:bg-indigo-700:hover {
+  background: linear-gradient(135deg, #416df8, #244bd2) !important;
+}
+
+/* Red brand accent available where the app uses red states */
+.bg-red-600 {
+  background: linear-gradient(135deg, var(--asr-brand-red), var(--asr-brand-red-dark)) !important;
+}
+
+/* Text accents */
+.text-blue-600,
+.text-blue-700,
+.text-blue-800,
+.text-indigo-600,
+.text-indigo-700,
+.text-indigo-800 {
+  color: var(--asr-primary) !important;
+}
+
+.text-slate-400,
+.text-slate-500 {
+  color: var(--asr-muted) !important;
+}
+
+/* Soft panels */
+.bg-blue-50,
+.bg-indigo-50,
+.bg-slate-50 {
+  background: rgba(243,247,255,0.92) !important;
+}
+
+.bg-red-50 {
+  background: #fff1f2 !important;
+}
+
+.bg-green-50 {
+  background: #ecfdf5 !important;
+}
+
+/* Login/header gradients from current app become Extej-like soft panels */
+.bg-gradient-to-r.from-blue-50.to-indigo-50,
+.bg-gradient-to-r.from-blue-700.to-indigo-800,
+.bg-gradient-to-r.from-blue-600.to-indigo-700,
+.bg-gradient-to-r.from-blue-600.to-indigo-600,
+.bg-gradient-to-r.from-indigo-700.to-slate-900,
+.bg-gradient-to-r.from-slate-900.to-indigo-900 {
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.92), rgba(239,244,255,0.96)) !important;
+  color: var(--asr-text) !important;
+  border-bottom: 1px solid var(--asr-border);
+}
+
+.bg-gradient-to-r.from-blue-700.to-indigo-800 *,
+.bg-gradient-to-r.from-blue-600.to-indigo-700 *,
+.bg-gradient-to-r.from-blue-600.to-indigo-600 *,
+.bg-gradient-to-r.from-indigo-700.to-slate-900 *,
+.bg-gradient-to-r.from-slate-900.to-indigo-900 * {
+  color: var(--asr-text) !important;
+}
+
+/* Bottom nav like compact sidebar selection */
+.fixed.bottom-0 {
+  background: rgba(255,255,255,0.92) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-color: var(--asr-border) !important;
+  box-shadow: 0 -14px 34px rgba(91,111,155,0.13) !important;
+}
+
+.fixed.bottom-0 button.bg-blue-600,
+.fixed.bottom-0 button.bg-indigo-600 {
+  background: linear-gradient(135deg, #5c83ff, #315be8) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 20px rgba(63,109,246,0.25) !important;
+}
+
+/* Drawer/sidebar feel */
+aside.bg-white {
+  background: rgba(255,255,255,0.96) !important;
+  box-shadow: 18px 0 48px rgba(91,111,155,0.24) !important;
+}
+
+/* Inputs mimic clean admin dashboard search/input fields */
+input,
+select,
+textarea {
+  background: rgba(255,255,255,0.96) !important;
+  border-color: var(--asr-border) !important;
+  color: var(--asr-text) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.9);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #a6b1c4 !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none !important;
+  border-color: var(--asr-primary) !important;
+  box-shadow: 0 0 0 4px rgba(63,109,246,0.12) !important;
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: #f8faff !important;
+  color: #9ba8bd !important;
+}
+
+button {
+  transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* Rate cards feel more like market widgets */
+.grid .bg-white.border.rounded-2xl,
+.grid .bg-white.border.rounded-3xl {
+  box-shadow: var(--asr-soft-shadow) !important;
+}
+
+/* Status colors */
+.bg-green-600 {
+  background: linear-gradient(135deg, #34d399, #059669) !important;
+}
+
+.text-green-700,
+.text-green-600 {
+  color: #059669 !important;
+}
+
+.text-red-700,
+.text-red-600 {
+  color: var(--asr-danger) !important;
+}
+
+/* Tables/lists */
+.border-b {
+  border-color: #edf1f8 !important;
+}
+
+/* Scrollbars */
+*::-webkit-scrollbar {
+  height: 7px;
+  width: 7px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #cdd8ee;
+  border-radius: 999px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Mobile polish */
+@media (max-width: 640px) {
+  body::before {
+    background-size: 190px 190px, 240px 240px;
+  }
+  .p-5 { padding: 1rem !important; }
+  .rounded-3xl { border-radius: 1.05rem !important; }
+  .text-3xl { font-size: 1.55rem !important; }
+}
