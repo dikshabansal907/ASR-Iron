@@ -1,113 +1,129 @@
 
--- FabriRewards Supabase schema
--- Run this in Supabase SQL Editor before starting the app.
+-- ASR Iron final image-matched Supabase schema support
+-- Run this in Supabase SQL Editor. Safe to run multiple times.
 
-create extension if not exists pgcrypto;
+alter table public.profiles add column if not exists email text;
 
-create table if not exists public.profiles (
-  id uuid primary key references auth.users(id) on delete cascade,
-  company_name text not null,
-  mobile text unique,
-  workshop_address text,
-  role text not null default 'fabricator' check (role in ('fabricator','admin')),
-  status text not null default 'pending' check (status in ('pending','approved','rejected')),
-  total_points integer not null default 0,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
+update public.profiles p
+set email = u.email
+from auth.users u
+where p.id = u.id
+  and (p.email is null or p.email = '');
 
-create table if not exists public.incentive_items (
+create table if not exists public.material_segments (
   id uuid primary key default gen_random_uuid(),
-  name text not null,
-  unit text not null check (unit in ('kg','pcs','ft')),
-  points_per_unit integer not null check (points_per_unit > 0),
-  active boolean not null default true,
+  name text not null unique,
+  base_rate_kg numeric not null default 0,
+  freight_kg numeric not null default 0,
   created_at timestamptz not null default now()
 );
 
-create table if not exists public.submissions (
+create table if not exists public.material_specs (
+  id uuid primary key default gen_random_uuid(),
+  segment_id uuid not null references public.material_segments(id) on delete cascade,
+  name text not null,
+  diff_kg numeric not null default 0,
+  created_at timestamptz not null default now(),
+  unique(segment_id, name)
+);
+
+create table if not exists public.redemption_requests (
   id uuid primary key default gen_random_uuid(),
   fabricator_id uuid not null references public.profiles(id) on delete cascade,
-  item_id uuid references public.incentive_items(id),
-  item_name text not null,
-  quantity numeric not null check (quantity > 0),
-  unit text not null,
-  points_earned integer not null check (points_earned >= 0),
+  points_requested integer not null check (points_requested > 0),
   status text not null default 'pending' check (status in ('pending','approved','rejected')),
+  note text,
   reviewed_by uuid references public.profiles(id),
   reviewed_at timestamptz,
   created_at timestamptz not null default now()
 );
 
-create or replace function public.is_admin()
-returns boolean language sql stable security definer set search_path = public as $$
-  select exists(select 1 from public.profiles where id = auth.uid() and role='admin' and status='approved');
-$$;
-
 create or replace function public.handle_new_user()
-returns trigger language plpgsql security definer set search_path = public as $$
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
 begin
-  insert into public.profiles (id, company_name, mobile, workshop_address, role, status)
+  insert into public.profiles (id, email, company_name, mobile, workshop_address, role, status)
   values (
     new.id,
+    new.email,
     coalesce(new.raw_user_meta_data->>'company_name', 'New Fabricator'),
     new.raw_user_meta_data->>'mobile',
     new.raw_user_meta_data->>'workshop_address',
     'fabricator',
     'pending'
   )
-  on conflict (id) do nothing;
+  on conflict (id) do update set
+    email = excluded.email,
+    company_name = coalesce(public.profiles.company_name, excluded.company_name),
+    mobile = coalesce(public.profiles.mobile, excluded.mobile),
+    workshop_address = coalesce(public.profiles.workshop_address, excluded.workshop_address);
   return new;
 end;
 $$;
 
-drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created after insert on auth.users
-for each row execute procedure public.handle_new_user();
-
-create or replace function public.touch_updated_at()
-returns trigger language plpgsql as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
+create or replace function public.get_auth_email_by_mobile(login_mobile text)
+returns text
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select p.email
+  from public.profiles p
+  where regexp_replace(coalesce(p.mobile, ''), '\D', '', 'g') = regexp_replace(coalesce(login_mobile, ''), '\D', '', 'g')
+  limit 1;
 $$;
 
-drop trigger if exists profiles_touch on public.profiles;
-create trigger profiles_touch before update on public.profiles
-for each row execute procedure public.touch_updated_at();
+grant execute on function public.get_auth_email_by_mobile(text) to anon, authenticated;
 
-alter table public.profiles enable row level security;
-alter table public.incentive_items enable row level security;
-alter table public.submissions enable row level security;
+alter table public.material_segments enable row level security;
+alter table public.material_specs enable row level security;
+alter table public.redemption_requests enable row level security;
 
--- Profiles
-create policy "profiles_select_own_or_admin" on public.profiles for select using (id = auth.uid() or public.is_admin());
-create policy "profiles_insert_own" on public.profiles for insert with check (id = auth.uid());
-create policy "profiles_update_own_limited" on public.profiles for update using (id = auth.uid()) with check (id = auth.uid() and role = 'fabricator');
-create policy "profiles_admin_update" on public.profiles for update using (public.is_admin()) with check (public.is_admin());
+do $$ begin
+  create policy "material_segments_read" on public.material_segments for select to authenticated using (true);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "material_segments_admin" on public.material_segments for all to authenticated using (public.is_admin()) with check (public.is_admin());
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "material_specs_read" on public.material_specs for select to authenticated using (true);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "material_specs_admin" on public.material_specs for all to authenticated using (public.is_admin()) with check (public.is_admin());
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "redemptions_select_own_or_admin" on public.redemption_requests for select to authenticated using (fabricator_id = auth.uid() or public.is_admin());
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "redemptions_insert_own" on public.redemption_requests for insert to authenticated with check (fabricator_id = auth.uid());
+exception when duplicate_object then null; end $$;
+do $$ begin
+  create policy "redemptions_admin_update" on public.redemption_requests for update to authenticated using (public.is_admin()) with check (public.is_admin());
+exception when duplicate_object then null; end $$;
 
--- Items
-create policy "items_read_all_authenticated" on public.incentive_items for select to authenticated using (active = true or public.is_admin());
-create policy "items_admin_insert" on public.incentive_items for insert to authenticated with check (public.is_admin());
-create policy "items_admin_update" on public.incentive_items for update to authenticated using (public.is_admin()) with check (public.is_admin());
-create policy "items_admin_delete" on public.incentive_items for delete to authenticated using (public.is_admin());
+insert into public.material_segments (name, base_rate_kg, freight_kg) values
+('Pipe Segment', 46, 1.2),
+('Angle Segment', 50, 1.0),
+('Flat Segment', 48, 1.1),
+('HP Segment', 52, 1.5)
+on conflict (name) do nothing;
 
--- Submissions
-create policy "submissions_select_own_or_admin" on public.submissions for select to authenticated using (fabricator_id = auth.uid() or public.is_admin());
-create policy "submissions_insert_own_approved" on public.submissions for insert to authenticated with check (
-  fabricator_id = auth.uid() and exists(select 1 from public.profiles p where p.id = auth.uid() and p.status='approved')
-);
-create policy "submissions_admin_update" on public.submissions for update to authenticated using (public.is_admin()) with check (public.is_admin());
-
-insert into public.incentive_items (name, unit, points_per_unit) values
-('Heavy Duty MS Window Grills','kg',8),
-('Stainless Steel Sliding Gate','pcs',150),
-('Structural Truss Piping','ft',4),
-('Sheet Metal Cladding Panels','pcs',45),
-('Mild Steel Staircase Railings','ft',12)
+insert into public.material_specs (segment_id, name, diff_kg)
+select s.id, x.name, x.diff
+from public.material_segments s
+join (values
+('Pipe Segment','1" MS Round Pipe (Medium)',0.5),
+('Pipe Segment','2" Square GI Pipe (Heavy)',1.2),
+('Pipe Segment','0.5" MS Conduit Pipe',-0.2),
+('Angle Segment','25 X 3 Angle',0.4),
+('Angle Segment','50 X 5 Angle',0.8),
+('Flat Segment','25 X 5 Flat',0.3),
+('Flat Segment','50 X 6 Flat',0.6),
+('HP Segment','HP 100',1.0),
+('HP Segment','HP 150',1.7)
+) as x(segment_name,name,diff) on x.segment_name=s.name
 on conflict do nothing;
-
--- After your first admin signs up, run this once with that user's email:
--- update public.profiles p set role='admin', status='approved'
--- from auth.users u where p.id=u.id and u.email='YOUR_ADMIN_EMAIL@example.com';
