@@ -10,9 +10,9 @@
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "@supabase/supabase-js": "latest",
+    "@supabase/supabase-js": "^2.108.2",
     "@vitejs/plugin-react": "latest",
-    "lucide-react": "latest",
+    "lucide-react": "^1.22.0",
     "react": "latest",
     "react-dom": "latest",
     "vite": "latest"

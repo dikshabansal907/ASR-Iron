@@ -1,129 +1,140 @@
 
--- ASR Iron final image-matched Supabase schema support
--- Run this in Supabase SQL Editor. Safe to run multiple times.
+-- ASR IRON Supabase Database Schema
+-- Run this in Supabase SQL Editor once.
 
-alter table public.profiles add column if not exists email text;
+create extension if not exists pgcrypto;
 
-update public.profiles p
-set email = u.email
-from auth.users u
-where p.id = u.id
-  and (p.email is null or p.email = '');
+do $$ begin
+  create type approval_status as enum ('Pending','Approved','Rejected');
+exception when duplicate_object then null; end $$;
 
-create table if not exists public.material_segments (
+create table if not exists fabricators (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  mobile text not null unique,
+  address text not null,
+  password text not null,
+  total_points numeric not null default 0,
+  status approval_status not null default 'Pending',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists incentive_items (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  unit text not null default 'kg',
+  points_per_unit numeric not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists submissions (
+  id uuid primary key default gen_random_uuid(),
+  fabricator_id uuid not null references fabricators(id) on delete cascade,
+  item_id uuid references incentive_items(id) on delete set null,
+  item_name text not null,
+  quantity numeric not null,
+  unit text not null,
+  points_earned numeric not null,
+  status approval_status not null default 'Pending',
+  submission_date date not null default current_date,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists rate_categories (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,
-  base_rate_kg numeric not null default 0,
-  freight_kg numeric not null default 0,
+  daily_rate numeric not null default 0,
+  freight numeric not null default 0,
   created_at timestamptz not null default now()
 );
 
-create table if not exists public.material_specs (
+create table if not exists rate_items (
   id uuid primary key default gen_random_uuid(),
-  segment_id uuid not null references public.material_segments(id) on delete cascade,
+  category_id uuid not null references rate_categories(id) on delete cascade,
   name text not null,
-  diff_kg numeric not null default 0,
+  fixed_difference numeric not null default 0,
   created_at timestamptz not null default now(),
-  unique(segment_id, name)
+  unique(category_id, name)
 );
 
-create table if not exists public.redemption_requests (
-  id uuid primary key default gen_random_uuid(),
-  fabricator_id uuid not null references public.profiles(id) on delete cascade,
-  points_requested integer not null check (points_requested > 0),
-  status text not null default 'pending' check (status in ('pending','approved','rejected')),
-  note text,
-  reviewed_by uuid references public.profiles(id),
-  reviewed_at timestamptz,
-  created_at timestamptz not null default now()
-);
-
-create or replace function public.handle_new_user()
-returns trigger
+create or replace function approve_submission(p_submission_id uuid)
+returns void
 language plpgsql
-security definer
-set search_path = public
 as $$
+declare
+  v_submission submissions%rowtype;
 begin
-  insert into public.profiles (id, email, company_name, mobile, workshop_address, role, status)
-  values (
-    new.id,
-    new.email,
-    coalesce(new.raw_user_meta_data->>'company_name', 'New Fabricator'),
-    new.raw_user_meta_data->>'mobile',
-    new.raw_user_meta_data->>'workshop_address',
-    'fabricator',
-    'pending'
-  )
-  on conflict (id) do update set
-    email = excluded.email,
-    company_name = coalesce(public.profiles.company_name, excluded.company_name),
-    mobile = coalesce(public.profiles.mobile, excluded.mobile),
-    workshop_address = coalesce(public.profiles.workshop_address, excluded.workshop_address);
-  return new;
+  select * into v_submission from submissions where id = p_submission_id for update;
+  if not found then
+    raise exception 'Submission not found';
+  end if;
+  if v_submission.status <> 'Pending' then
+    return;
+  end if;
+  update submissions set status = 'Approved' where id = p_submission_id;
+  update fabricators set total_points = total_points + v_submission.points_earned where id = v_submission.fabricator_id;
 end;
 $$;
 
-create or replace function public.get_auth_email_by_mobile(login_mobile text)
-returns text
-language sql
-stable
-security definer
-set search_path = public
+create or replace function reject_submission(p_submission_id uuid)
+returns void
+language plpgsql
 as $$
-  select p.email
-  from public.profiles p
-  where regexp_replace(coalesce(p.mobile, ''), '\D', '', 'g') = regexp_replace(coalesce(login_mobile, ''), '\D', '', 'g')
-  limit 1;
+begin
+  update submissions set status = 'Rejected' where id = p_submission_id and status = 'Pending';
+end;
 $$;
 
-grant execute on function public.get_auth_email_by_mobile(text) to anon, authenticated;
+alter table fabricators disable row level security;
+alter table incentive_items disable row level security;
+alter table submissions disable row level security;
+alter table rate_categories disable row level security;
+alter table rate_items disable row level security;
 
-alter table public.material_segments enable row level security;
-alter table public.material_specs enable row level security;
-alter table public.redemption_requests enable row level security;
+insert into incentive_items (name, unit, points_per_unit) values
+('Heavy Structural Fabrication','kg',3),
+('Steel Window Frame Assembly','pcs',50),
+('Stainless Handrails','ft',15),
+('Iron Grill Work','pcs',80)
+on conflict do nothing;
 
-do $$ begin
-  create policy "material_segments_read" on public.material_segments for select to authenticated using (true);
-exception when duplicate_object then null; end $$;
-do $$ begin
-  create policy "material_segments_admin" on public.material_segments for all to authenticated using (public.is_admin()) with check (public.is_admin());
-exception when duplicate_object then null; end $$;
-do $$ begin
-  create policy "material_specs_read" on public.material_specs for select to authenticated using (true);
-exception when duplicate_object then null; end $$;
-do $$ begin
-  create policy "material_specs_admin" on public.material_specs for all to authenticated using (public.is_admin()) with check (public.is_admin());
-exception when duplicate_object then null; end $$;
-do $$ begin
-  create policy "redemptions_select_own_or_admin" on public.redemption_requests for select to authenticated using (fabricator_id = auth.uid() or public.is_admin());
-exception when duplicate_object then null; end $$;
-do $$ begin
-  create policy "redemptions_insert_own" on public.redemption_requests for insert to authenticated with check (fabricator_id = auth.uid());
-exception when duplicate_object then null; end $$;
-do $$ begin
-  create policy "redemptions_admin_update" on public.redemption_requests for update to authenticated using (public.is_admin()) with check (public.is_admin());
-exception when duplicate_object then null; end $$;
+insert into fabricators (name, mobile, address, password, total_points, status) values
+('Rajesh Welding Works','9876543210','Plot 45, Industrial Area Phase 1','password123',450,'Approved'),
+('Sharma Steel & Fab','8765432109','Shop 12, Main Bazar Road','password123',120,'Approved'),
+('Global Metal Crafters','7654321098','G-12, Sector 4 Extension','password123',850,'Approved')
+on conflict (mobile) do nothing;
 
-insert into public.material_segments (name, base_rate_kg, freight_kg) values
-('Pipe Segment', 46, 1.2),
-('Angle Segment', 50, 1.0),
-('Flat Segment', 48, 1.1),
-('HP Segment', 52, 1.5)
-on conflict (name) do nothing;
+insert into rate_categories (name, daily_rate, freight) values
+('Pipe',46.0,1.2),
+('Angle',41.5,1.0),
+('Flat',40.5,1.0),
+('TMT',48.0,1.5)
+on conflict (name) do update set daily_rate = excluded.daily_rate, freight = excluded.freight;
 
-insert into public.material_specs (segment_id, name, diff_kg)
-select s.id, x.name, x.diff
-from public.material_segments s
+insert into rate_items (category_id, name, fixed_difference)
+select c.id, v.name, v.fixed_difference
+from rate_categories c
 join (values
-('Pipe Segment','1" MS Round Pipe (Medium)',0.5),
-('Pipe Segment','2" Square GI Pipe (Heavy)',1.2),
-('Pipe Segment','0.5" MS Conduit Pipe',-0.2),
-('Angle Segment','25 X 3 Angle',0.4),
-('Angle Segment','50 X 5 Angle',0.8),
-('Flat Segment','25 X 5 Flat',0.3),
-('Flat Segment','50 X 6 Flat',0.6),
-('HP Segment','HP 100',1.0),
-('HP Segment','HP 150',1.7)
-) as x(segment_name,name,diff) on x.segment_name=s.name
+('Pipe','1" MS Round Pipe (Medium)',0.5),
+('Pipe','2" Square GI Pipe (Heavy)',1.2),
+('Pipe','0.5" MS Conduit Pipe',-0.2),
+('Angle','25x25x3mm Steel Angle',0.0),
+('Angle','50x50x5mm Structural Angle',0.8),
+('Flat','25x5mm Mild Steel Flat Bar',-0.15),
+('Flat','40x6mm Heavy Flat Bar',0.3),
+('TMT','10mm Fe550 High-Strength TMT',0.45),
+('TMT','16mm Premium TMT Reinforcement',0.95)
+) as v(category_name, name, fixed_difference) on v.category_name = c.name
+on conflict (category_id, name) do update set fixed_difference = excluded.fixed_difference;
+
+insert into submissions (fabricator_id, item_id, item_name, quantity, unit, points_earned, status, submission_date)
+select f.id, i.id, i.name, 50, i.unit, 250, 'Approved', date '2026-06-20'
+from fabricators f, incentive_items i
+where f.mobile = '9876543210' and i.name = 'Steel Window Frame Assembly'
+on conflict do nothing;
+
+insert into submissions (fabricator_id, item_id, item_name, quantity, unit, points_earned, status, submission_date)
+select f.id, i.id, i.name, 2, i.unit, 160, 'Approved', date '2026-06-21'
+from fabricators f, incentive_items i
+where f.mobile = '9876543210' and i.name = 'Iron Grill Work'
 on conflict do nothing;
