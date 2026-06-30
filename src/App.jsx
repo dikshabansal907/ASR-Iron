@@ -10,12 +10,7 @@ import { supabase } from './lib/supabaseClient';
 function AsrIronLogo({ className = '' }) {
   return (
     <svg viewBox="0 0 420 150" className={`app-logo ${className}`} xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="roofBlue" x1="0" x2="1">
-          <stop offset="0%" stopColor="#0A3E7A" />
-          <stop offset="100%" stopColor="#105AA5" />
-        </linearGradient>
-      </defs>
+      <defs><linearGradient id="roofBlue" x1="0" x2="1"><stop offset="0%" stopColor="#0A3E7A" /><stop offset="100%" stopColor="#105AA5" /></linearGradient></defs>
       <circle cx="250" cy="42" r="16" fill="#F29E18" />
       <path d="M135 68 L205 28 L290 66" fill="none" stroke="url(#roofBlue)" strokeWidth="11" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M155 72 L205 42 L270 72 Z" fill="#0A3E7A" opacity="0.96" />
@@ -78,11 +73,14 @@ export default function App() {
   const [newSizeDiff, setNewSizeDiff] = useState('');
   const [newSegment, setNewSegment] = useState({ name: '', rate: '', freight: '' });
 
-  const [adminTab, setAdminTab] = useState('market');
-  const [fabTab, setFabTab] = useState('market');
+  // DEFAULT PAGE AFTER LOGIN IS NOW CALCULATOR
+  const [adminTab, setAdminTab] = useState('rate-calculator');
+  const [fabTab, setFabTab] = useState('live-calculator');
+
   const [calcCategoryId, setCalcCategoryId] = useState('');
   const [calcItemId, setCalcItemId] = useState('');
-  const [calcQty, setCalcQty] = useState('');
+  // DEFAULT QUANTITY IS ZERO
+  const [calcQty, setCalcQty] = useState('0');
   const [calculatorCart, setCalculatorCart] = useState([]);
   const [quoteText, setQuoteText] = useState('');
   const [quoteEdited, setQuoteEdited] = useState(false);
@@ -135,7 +133,7 @@ export default function App() {
     if (loginMobile.trim().toLowerCase() === 'admin' && loginPassword === 'admin') {
       setCurrentUser({ id: 'admin', name: 'Program Administrator', role: 'admin' });
       setCurrentScreen('admin');
-      setAdminTab('market');
+      setAdminTab('rate-calculator');
       return;
     }
     const { data, error } = await supabase.from('fabricators').select('*').eq('mobile', loginMobile.trim()).maybeSingle();
@@ -145,20 +143,13 @@ export default function App() {
     if (data.status === 'Rejected') return setLoginError('Your profile application has been rejected.');
     setCurrentUser({ ...data, role: 'fabricator' });
     setCurrentScreen('fabricator');
-    setFabTab('market');
+    setFabTab('live-calculator');
   }
 
   async function handleSignUpSubmit(e) {
     e.preventDefault();
     setSignUpError('');
-    const { error } = await supabase.from('fabricators').insert({
-      name: signup.name,
-      mobile: signup.mobile,
-      address: signup.address,
-      password: signup.password,
-      total_points: 0,
-      status: 'Pending'
-    });
+    const { error } = await supabase.from('fabricators').insert({ name: signup.name, mobile: signup.mobile, address: signup.address, password: signup.password, total_points: 0, status: 'Pending' });
     if (error) return setSignUpError(error.code === '23505' ? 'This mobile number is already registered.' : error.message);
     setSignUpSuccessMsg(true);
     setSignup({ name: '', mobile: '', address: '', password: '' });
@@ -166,12 +157,7 @@ export default function App() {
   }
 
   async function updateMarketRate(row, newRate, newFreight = row.freight) {
-    const { error } = await supabase.from('rate_categories').update({
-      previous_daily_rate: num(row.daily_rate),
-      daily_rate: num(newRate),
-      freight: num(newFreight),
-      updated_at: new Date().toISOString()
-    }).eq('id', row.id);
+    const { error } = await supabase.from('rate_categories').update({ previous_daily_rate: num(row.daily_rate), daily_rate: num(newRate), freight: num(newFreight), updated_at: new Date().toISOString() }).eq('id', row.id);
     if (error) setToast(error.message);
     await loadAll();
   }
@@ -180,13 +166,7 @@ export default function App() {
     e.preventDefault();
     if (!newSegment.name.trim()) return;
     const initialRate = num(newSegment.rate);
-    const { data, error } = await supabase.from('rate_categories').insert({
-      name: newSegment.name.trim().replace(/[^a-zA-Z0-9 ]/g, ''),
-      daily_rate: initialRate,
-      previous_daily_rate: initialRate,
-      freight: num(newSegment.freight),
-      updated_at: new Date().toISOString()
-    }).select().single();
+    const { data, error } = await supabase.from('rate_categories').insert({ name: newSegment.name.trim().replace(/[^a-zA-Z0-9 ]/g, ''), daily_rate: initialRate, previous_daily_rate: initialRate, freight: num(newSegment.freight), updated_at: new Date().toISOString() }).select().single();
     if (error) return setToast(error.message);
     setSelectedRateCategoryId(data.id);
     setNewSegment({ name: '', rate: '', freight: '' });
@@ -198,15 +178,7 @@ export default function App() {
     if (!selectedItem || !quantity || Number(quantity) <= 0) return;
     const qty = Number(quantity);
     const pts = qty * num(selectedItem.points_per_unit);
-    const { error } = await supabase.from('submissions').insert({
-      fabricator_id: currentUser.id,
-      item_id: selectedItem.id,
-      item_name: selectedItem.name,
-      quantity: qty,
-      unit: selectedItem.unit,
-      points_earned: pts,
-      status: 'Pending'
-    });
+    const { error } = await supabase.from('submissions').insert({ fabricator_id: currentUser.id, item_id: selectedItem.id, item_name: selectedItem.name, quantity: qty, unit: selectedItem.unit, points_earned: pts, status: 'Pending' });
     if (error) return setToast(error.message);
     setSelectedItemId('');
     setQuantity('');
@@ -217,36 +189,25 @@ export default function App() {
 
   async function handleAddToCalculator(e) {
     e.preventDefault();
-    // Allow quantity 0. Block only blank or negative quantity.
+    // Quantity defaults to 0 and is allowed. Block only blank or negative.
     if (!calcCategoryId || !calcItemId || calcQty === '' || Number(calcQty) < 0) return;
     const matched = rateItems.find((i) => i.id === calcItemId);
     const c = getCategory(calcCategoryId);
     if (!matched || !c) return;
     const unitRate = calculateUnitRate(calcCategoryId, matched.fixed_difference);
     const qty = Number(calcQty);
-    // IMPORTANT: if quantity is 0, final price is the unit rate itself.
+    // If quantity is 0, final price is the rate itself.
     const finalTotal = qty === 0 ? unitRate : Number((unitRate * qty).toFixed(2));
-    setCalculatorCart([...calculatorCart, {
-      id: `cart-${Date.now()}`,
-      category: c.name,
-      itemName: matched.name,
-      qty,
-      unitRate,
-      total: finalTotal
-    }]);
+    setCalculatorCart([...calculatorCart, { id: `cart-${Date.now()}`, category: c.name, itemName: matched.name, qty, unitRate, total: finalTotal }]);
     setQuoteEdited(false);
     setCalcItemId('');
-    setCalcQty('');
+    setCalcQty('0');
   }
 
   async function addSize(e) {
     e.preventDefault();
     if (!newSizeName.trim() || !selectedRateCategoryId) return;
-    const { error } = await supabase.from('rate_items').insert({
-      category_id: selectedRateCategoryId,
-      name: newSizeName,
-      fixed_difference: num(newSizeDiff)
-    });
+    const { error } = await supabase.from('rate_items').insert({ category_id: selectedRateCategoryId, name: newSizeName, fixed_difference: num(newSizeDiff) });
     if (error) return setToast(error.message);
     setNewSizeName('');
     setNewSizeDiff('');
@@ -261,11 +222,7 @@ export default function App() {
   async function addNewItem(e) { e.preventDefault(); if (!newItem.name || !newItem.points) return; await supabase.from('incentive_items').insert({ name: newItem.name, unit: newItem.unit, points_per_unit: num(newItem.points) }); setNewItem({ name: '', unit: 'kg', points: '' }); await loadAll(); }
   async function deleteItem(id) { await supabase.from('incentive_items').delete().eq('id', id); await loadAll(); }
   function logout() { setCurrentUser(null); setCurrentScreen('login'); setLoginMobile(''); setLoginPassword(''); setSidebarOpen(false); }
-
-  function statusBadge(status) {
-    const cls = status === 'Approved' ? 'approved' : status === 'Rejected' ? 'rejected' : 'pending';
-    return <span className={`pill ${cls}`}>{status}</span>;
-  }
+  function statusBadge(status) { const cls = status === 'Approved' ? 'approved' : status === 'Rejected' ? 'rejected' : 'pending'; return <span className={`pill ${cls}`}>{status}</span>; }
 
   function buildQuotationMessage() {
     const date = formatDate();
@@ -275,9 +232,7 @@ export default function App() {
       return `📝 *ASR Iron* \n   *${date}*\n-----------------------------------------\n   *${item.category.toUpperCase()} - ${item.itemName}* : *${inr(item.total)}*\n-----------------------------------------\nThankyou!`;
     }
     const lines = ['📝 *ASR Iron* ', `   *${date}*`, '-----------------------------------------'];
-    calculatorCart.forEach((item, index) => {
-      lines.push(`${index + 1}. *${item.category.toUpperCase()} - ${item.itemName}* : *${inr(item.total)}*`, '');
-    });
+    calculatorCart.forEach((item, index) => lines.push(`${index + 1}. *${item.category.toUpperCase()} - ${item.itemName}* : *${inr(item.total)}*`, ''));
     const total = calculatorCart.reduce((sum, item) => sum + item.total, 0);
     lines.push('-----------------------------------------', `💰 *Total Value: ${inr(total)}*`, 'Thankyou!');
     return lines.join('\n');
@@ -290,19 +245,20 @@ export default function App() {
   async function nativeShareQuotation() { if (navigator.share) { try { await navigator.share({ title: 'ASR Iron Quotation', text: finalQuoteText() }); } catch {} } else await copyQuotation(); }
   function resetQuoteText() { setQuoteText(buildQuotationMessage()); setQuoteEdited(false); }
 
+  // CALCULATOR IS NOW FIRST IN BOTH MENUS
   const adminMenu = [
+    { id: 'rate-calculator', label: 'Calculator', icon: <Calculator size={18} /> },
     { id: 'market', label: 'Market', icon: <BarChart3 size={18} /> },
     { id: 'rate-update', label: 'Daily Rate', icon: <FolderPlus size={18} /> },
-    { id: 'rate-calculator', label: 'Calculator', icon: <Calculator size={18} /> },
     { id: 'approvals', label: 'Claims', icon: <CheckCircle2 size={18} /> },
     { id: 'fabricators', label: 'Signups', icon: <UserPlus size={18} /> },
     { id: 'items', label: 'Items', icon: <PlusCircle size={18} /> },
     { id: 'history', label: 'History', icon: <History size={18} /> }
   ];
   const fabricatorMenu = [
+    { id: 'live-calculator', label: 'Calculator', icon: <Calculator size={18} /> },
     { id: 'market', label: 'Market', icon: <BarChart3 size={18} /> },
-    { id: 'incentives', label: 'Claims', icon: <PlusCircle size={18} /> },
-    { id: 'live-calculator', label: 'Rates', icon: <Calculator size={18} /> }
+    { id: 'incentives', label: 'Claims', icon: <PlusCircle size={18} /> }
   ];
 
   function rateChip(row, fixed = false) {
@@ -310,25 +266,17 @@ export default function App() {
     return <div className={`rate-chip ${fixed ? 'fixed' : ''}`} key={row.id}><div className="rate-name">{row.name}</div><div className="rate-value">{inr(row.daily_rate)}</div><div className={`rate-change ${ch.cls}`}>{ch.icon}{ch.text}</div><div className="rate-time">Updated {timeAgo(row.updated_at || row.created_at)}</div></div>;
   }
   function marketTicker() { return <div className="market-ticker"><div className="market-strip">{topRates.map((r, i) => rateChip(r, i < 4))}</div></div>; }
-  function marketPage() {
-    return <div className="grid"><div className="area"><h2 className="section-title"><BarChart3 size={20} /> Daily Market Rates</h2><p className="section-note">Update daily rates here. Changes are saved to Supabase and used by Daily Rate and Calculator pages.</p><form className="small-card" onSubmit={addMarketCategory}><h3>Add New Market Item</h3><div className="grid grid-3"><input className="input" placeholder="e.g. Cement" value={newSegment.name} onChange={(e) => setNewSegment({ ...newSegment, name: e.target.value })} /><input className="input" type="number" step="0.01" placeholder="Daily Rate" value={newSegment.rate} onChange={(e) => setNewSegment({ ...newSegment, rate: e.target.value })} /><input className="input" type="number" step="0.01" placeholder="Freight" value={newSegment.freight} onChange={(e) => setNewSegment({ ...newSegment, freight: e.target.value })} /></div><button className="btn btn-primary full">Add to Market</button></form></div><div className="market-grid">{topRates.map((row) => { const ch = changeInfo(row); return <div className="market-card" key={row.id}><div className="market-card-head"><div><div className="rate-name">{row.name}</div><div className="rate-value">{inr(row.daily_rate)}</div><div className={`rate-change ${ch.cls}`}>{ch.icon}{ch.text}</div><div className="rate-time">Last updated {timeAgo(row.updated_at || row.created_at)}</div></div></div><div className="market-update-grid"><div className="field"><label className="label">New Daily Rate</label><input className="input" type="number" step="0.01" defaultValue={row.daily_rate} onBlur={(e) => updateMarketRate(row, e.target.value, row.freight)} /></div><div className="field"><label className="label">Freight</label><input className="input" type="number" step="0.01" defaultValue={row.freight} onBlur={(e) => updateMarketRate(row, row.daily_rate, e.target.value)} /></div></div></div>; })}</div></div>;
-  }
+  function marketPage() { return <div className="grid"><div className="area"><h2 className="section-title"><BarChart3 size={20} /> Daily Market Rates</h2><p className="section-note">Update daily rates here. Changes are saved to Supabase and used by Daily Rate and Calculator pages.</p><form className="small-card" onSubmit={addMarketCategory}><h3>Add New Market Item</h3><div className="grid grid-3"><input className="input" placeholder="e.g. Cement" value={newSegment.name} onChange={(e) => setNewSegment({ ...newSegment, name: e.target.value })} /><input className="input" type="number" step="0.01" placeholder="Daily Rate" value={newSegment.rate} onChange={(e) => setNewSegment({ ...newSegment, rate: e.target.value })} /><input className="input" type="number" step="0.01" placeholder="Freight" value={newSegment.freight} onChange={(e) => setNewSegment({ ...newSegment, freight: e.target.value })} /></div><button className="btn btn-primary full">Add to Market</button></form></div><div className="market-grid">{topRates.map((row) => { const ch = changeInfo(row); return <div className="market-card" key={row.id}><div className="market-card-head"><div><div className="rate-name">{row.name}</div><div className="rate-value">{inr(row.daily_rate)}</div><div className={`rate-change ${ch.cls}`}>{ch.icon}{ch.text}</div><div className="rate-time">Last updated {timeAgo(row.updated_at || row.created_at)}</div></div></div><div className="market-update-grid"><div className="field"><label className="label">New Daily Rate</label><input className="input" type="number" step="0.01" defaultValue={row.daily_rate} onBlur={(e) => updateMarketRate(row, e.target.value, row.freight)} /></div><div className="field"><label className="label">Freight</label><input className="input" type="number" step="0.01" defaultValue={row.freight} onBlur={(e) => updateMarketRate(row, row.daily_rate, e.target.value)} /></div></div></div>; })}</div></div>; }
 
-  function sidebarMenu(type) {
-    const isAdmin = type === 'admin', list = isAdmin ? adminMenu : fabricatorMenu, current = isAdmin ? adminTab : fabTab, setTab = isAdmin ? setAdminTab : setFabTab;
-    return <><div className={`sidebar-backdrop ${sidebarOpen ? 'show' : ''}`} onClick={() => setSidebarOpen(false)} /><aside className={`side-menu ${sidebarOpen ? 'open' : ''}`}><div className="side-menu-head"><AsrIronLogo /><button className="side-close" onClick={() => setSidebarOpen(false)}><X size={20} /></button></div><div className="side-menu-title">{isAdmin ? 'Admin Menu' : 'Fabricator Menu'}</div><div className="side-menu-list">{list.map((item) => <button key={item.id} className={`side-menu-item ${current === item.id ? 'active' : ''}`} onClick={() => { setTab(item.id); setSidebarOpen(false); }}>{item.icon}<span>{item.label}</span>{item.id === 'approvals' && submissions.filter((s) => s.status === 'Pending').length > 0 && <span className="side-count">{submissions.filter((s) => s.status === 'Pending').length}</span>}</button>)}</div></aside></>;
-  }
-  function bottomNav(type) {
-    const isAdmin = type === 'admin', list = isAdmin ? adminMenu : [...fabricatorMenu, { id: 'logout', label: 'Logout', icon: <LogOut size={18} /> }], current = isAdmin ? adminTab : fabTab;
-    return <div className="bottom-nav-scroll">{list.map((item) => <button key={item.id} className={current === item.id ? 'active' : ''} onClick={() => item.id === 'logout' ? logout() : isAdmin ? setAdminTab(item.id) : setFabTab(item.id)}>{item.icon}<span>{item.label}</span></button>)}</div>;
-  }
+  function sidebarMenu(type) { const isAdmin = type === 'admin', list = isAdmin ? adminMenu : fabricatorMenu, current = isAdmin ? adminTab : fabTab, setTab = isAdmin ? setAdminTab : setFabTab; return <><div className={`sidebar-backdrop ${sidebarOpen ? 'show' : ''}`} onClick={() => setSidebarOpen(false)} /><aside className={`side-menu ${sidebarOpen ? 'open' : ''}`}><div className="side-menu-head"><AsrIronLogo /><button className="side-close" onClick={() => setSidebarOpen(false)}><X size={20} /></button></div><div className="side-menu-title">{isAdmin ? 'Admin Menu' : 'Fabricator Menu'}</div><div className="side-menu-list">{list.map((item) => <button key={item.id} className={`side-menu-item ${current === item.id ? 'active' : ''}`} onClick={() => { setTab(item.id); setSidebarOpen(false); }}>{item.icon}<span>{item.label}</span>{item.id === 'approvals' && submissions.filter((s) => s.status === 'Pending').length > 0 && <span className="side-count">{submissions.filter((s) => s.status === 'Pending').length}</span>}</button>)}</div></aside></>; }
+  function bottomNav(type) { const isAdmin = type === 'admin', list = isAdmin ? adminMenu : [...fabricatorMenu, { id: 'logout', label: 'Logout', icon: <LogOut size={18} /> }], current = isAdmin ? adminTab : fabTab; return <div className="bottom-nav-scroll">{list.map((item) => <button key={item.id} className={current === item.id ? 'active' : ''} onClick={() => item.id === 'logout' ? logout() : isAdmin ? setAdminTab(item.id) : setFabTab(item.id)}>{item.icon}<span>{item.label}</span></button>)}</div>; }
 
   function calculatorEngine() {
     const activeSizes = rateItems.filter((x) => x.category_id === calcCategoryId);
     const total = calculatorCart.reduce((s, i) => s + i.total, 0);
     const previewItem = rateItems.find((i) => i.id === calcItemId);
     const previewCategory = getCategory(calcCategoryId);
-    return <div className="grid grid-5"><div className="area"><h3 className="section-title"><Calculator size={20} /> Generate New Estimate</h3><form onSubmit={handleAddToCalculator}><div className="field"><label className="label">Step 1: Select Category</label><select value={calcCategoryId} onChange={(e) => { setCalcCategoryId(e.target.value); setCalcItemId(''); setCalcQty(''); }} required><option value="">-- Choose Category --</option>{rateCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>{calcCategoryId && <div className="field"><label className="label">Step 2: Choose Size</label><select value={calcItemId} onChange={(e) => setCalcItemId(e.target.value)} required><option value="">-- Select Size --</option>{activeSizes.map((item) => <option key={item.id} value={item.id}>{item.name} (Diff: ₹{item.fixed_difference})</option>)}</select></div>}{calcCategoryId && calcItemId && <div className="small-card"><div className="field"><label className="label">Step 3: Quantity kg</label><input className="input" type="number" step="0.1" min="0" value={calcQty} onChange={(e) => setCalcQty(e.target.value)} required /></div>{calcQty !== '' && Number(calcQty) >= 0 && <div className="small-card"><p>Base: <b>{inr(previewCategory?.daily_rate)}</b></p><p>Diff: <b>{inr(previewItem?.fixed_difference)}</b></p><p>Freight: <b>{inr(previewCategory?.freight)}</b></p><p><b>Unit incl. GST: {inr(calculateUnitRate(calcCategoryId, previewItem?.fixed_difference))}/kg</b></p>{Number(calcQty) === 0 && <p className="muted"><b>Qty is 0, so final price will use the rate itself.</b></p>}</div>}</div>}<button className="btn btn-primary full">Add Item</button></form></div><div className="area"><h3 className="section-title">Calculated Quote Summary</h3>{calculatorCart.length === 0 ? <div className="empty"><Calculator size={42} /><p>No items computed yet.</p></div> : <><div className="table-wrap"><table className="table"><thead><tr><th>Item</th><th>Weight</th><th>Rate</th><th>Final</th><th></th></tr></thead><tbody>{calculatorCart.map((item) => <tr key={item.id}><td data-label="Item"><b>{item.itemName}</b><br /><span className="muted">{item.category}</span></td><td data-label="Weight">{item.qty} kg</td><td data-label="Rate">{inr(item.unitRate)}/kg</td><td data-label="Final"><b>{inr(item.total)}</b>{item.qty === 0 && <div className="muted">Rate used because qty is 0</div>}</td><td data-label="Action"><button className="btn btn-soft" onClick={() => { setCalculatorCart(calculatorCart.filter((x) => x.id !== item.id)); setQuoteEdited(false); }}><X size={14} /></button></td></tr>)}</tbody></table></div><div className="editable-quote"><label className="label">Editable quotation text</label><textarea className="input" value={quoteText} onChange={(e) => { setQuoteText(e.target.value); setQuoteEdited(true); }} /></div><div className="share-panel"><button className="btn btn-primary" onClick={copyQuotation}><Copy size={16} />Copy</button><button className="btn btn-success" onClick={shareWhatsApp}><MessageCircle size={16} />WhatsApp</button><button className="btn btn-soft" onClick={shareTelegram}><Send size={16} />Telegram</button><button className="btn btn-soft" onClick={shareEmail}><Mail size={16} />Email</button><button className="btn btn-gold" onClick={nativeShareQuotation}><Send size={16} />Share</button><button className="btn btn-soft" onClick={resetQuoteText}>Reset Text</button></div><div className="quote-total"><div><div className="label">Total kg</div><b>{calculatorCart.reduce((s, i) => s + i.qty, 0).toFixed(1)} kg</b></div><div><div className="label">Estimated Invoice</div><div className="big-green">{inr(total)}</div></div></div></>}</div></div>;
+    return <div className="grid grid-5"><div className="area"><h3 className="section-title"><Calculator size={20} /> Generate New Estimate</h3><form onSubmit={handleAddToCalculator}><div className="field"><label className="label">Step 1: Select Category</label><select value={calcCategoryId} onChange={(e) => { setCalcCategoryId(e.target.value); setCalcItemId(''); setCalcQty('0'); }} required><option value="">-- Choose Category --</option>{rateCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>{calcCategoryId && <div className="field"><label className="label">Step 2: Choose Size</label><select value={calcItemId} onChange={(e) => { setCalcItemId(e.target.value); setCalcQty('0'); }} required><option value="">-- Select Size --</option>{activeSizes.map((item) => <option key={item.id} value={item.id}>{item.name} (Diff: ₹{item.fixed_difference})</option>)}</select></div>}{calcCategoryId && calcItemId && <div className="small-card"><div className="field"><label className="label">Quantity kg</label><input className="input" type="number" step="0.1" min="0" value={calcQty} onChange={(e) => setCalcQty(e.target.value)} required /></div>{calcQty !== '' && Number(calcQty) >= 0 && <div className="small-card"><p>Rate: <b>{inr(calculateUnitRate(calcCategoryId, previewItem?.fixed_difference))}/kg</b></p>{Number(calcQty) === 0 && <p className="muted"><b>Quantity is 0, so final price will be the rate itself.</b></p>}</div>}</div>}<button className="btn btn-primary full" disabled={!calcCategoryId || !calcItemId || calcQty === '' || Number(calcQty) < 0}>Add Item</button></form></div><div className="area quote-summary-area"><h3 className="section-title compact-title">Calculated Quote Summary</h3>{calculatorCart.length === 0 ? <div className="empty compact-empty"><Calculator size={32} /><p>No items added.</p></div> : <><div className="quote-mini-list">{calculatorCart.map((item) => <div className="quote-mini-row" key={item.id}><div className="quote-mini-main"><div className="quote-mini-item">{item.itemName}</div><div className="quote-mini-cat">{item.category}{item.qty === 0 ? ' · Qty 0, rate used' : ` · ${item.qty} kg`}</div></div><div className="quote-mini-price">{inr(item.total)}</div><button className="quote-mini-delete" onClick={() => { setCalculatorCart(calculatorCart.filter((x) => x.id !== item.id)); setQuoteEdited(false); }} aria-label="Delete item"><X size={14} /></button></div>)}</div><div className="editable-quote"><label className="label">Editable quotation text</label><textarea className="input" value={quoteText} onChange={(e) => { setQuoteText(e.target.value); setQuoteEdited(true); }} /></div><div className="share-panel"><button className="btn btn-primary" onClick={copyQuotation}><Copy size={16} />Copy</button><button className="btn btn-success" onClick={shareWhatsApp}><MessageCircle size={16} />WhatsApp</button><button className="btn btn-soft" onClick={shareTelegram}><Send size={16} />Telegram</button><button className="btn btn-soft" onClick={shareEmail}><Mail size={16} />Email</button><button className="btn btn-gold" onClick={nativeShareQuotation}><Send size={16} />Share</button><button className="btn btn-soft" onClick={resetQuoteText}>Reset Text</button></div><div className="quote-total compact-total"><div><div className="label">Total kg</div><b>{calculatorCart.reduce((s, i) => s + i.qty, 0).toFixed(1)} kg</b></div><div><div className="label">Estimated Invoice</div><div className="big-green">{inr(total)}</div></div></div></>}</div></div>;
   }
 
   if (loading) return <div className="screen center"><div className="card"><RefreshCw /> Loading database...</div></div>;
