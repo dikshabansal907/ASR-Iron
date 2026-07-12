@@ -1533,6 +1533,94 @@ textarea:focus {
     justify-content: center
 }
 
+/* Phone Alerts persistent card - paste at bottom of src/styles.css if not already present */
+.phone-alert-visible-card {
+  width: 100%;
+  margin: 0 0 14px 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(242, 158, 24, 0.28);
+  border-radius: 18px;
+  background: linear-gradient(135deg, #fff7ed 0%, #eff6ff 100%);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.phone-alert-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: #0A3E7A;
+}
+.phone-alert-info b {
+  display: block;
+  font-size: 12px;
+  font-weight: 950;
+  color: #0f172a;
+}
+.phone-alert-info span {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #64748b;
+  line-height: 1.25;
+}
+.phone-alert-main-btn,
+.push-enable-btn {
+  min-height: 34px;
+  padding: 8px 11px;
+  border-radius: 12px;
+  font-size: 11px;
+  white-space: nowrap;
+  box-shadow: 0 8px 18px rgba(242, 158, 24, 0.22);
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.push-enabled-pill,
+.push-blocked-pill {
+  min-height: 32px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 950;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+.push-enabled-pill {
+  background: #dcfce7;
+  color: #166534;
+}
+.push-blocked-pill {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.header-logout-btn {
+  min-height: 34px;
+  padding: 8px 10px;
+}
+@media (max-width: 920px) {
+  .phone-alert-visible-card {
+    padding: 10px;
+    border-radius: 16px;
+    gap: 8px;
+  }
+  .phone-alert-info b { font-size: 11px; }
+  .phone-alert-info span { font-size: 9.5px; }
+  .phone-alert-main-btn { font-size: 10px; padding: 8px 9px; }
+  .header-actions { gap: 6px; }
+  .push-enable-btn { font-size: 0; width: 38px; height: 38px; padding: 0; border-radius: 13px; }
+  .push-enabled-pill { font-size: 0; width: 36px; height: 36px; padding: 0; justify-content: center; }
+  .push-blocked-pill { font-size: 9px; padding: 7px 8px; }
+  .header-logout-btn { width: 38px; height: 38px; padding: 0; }
+}
+
 
 @media(max-width:920px) {
     .notification-history-card {
