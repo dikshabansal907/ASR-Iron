@@ -1,0 +1,74 @@
+[
+  {
+    "path": "README.md",
+    "size": 183
+  },
+  {
+    "path": "RESTORE_NOTES.md",
+    "size": 776
+  },
+  {
+    "path": "fix_blank_screen.py",
+    "size": 614
+  },
+  {
+    "path": "index.html",
+    "size": 581
+  },
+  {
+    "path": "package-lock.json",
+    "size": 200897
+  },
+  {
+    "path": "package.json",
+    "size": 320
+  },
+  {
+    "path": "postcss.config.js",
+    "size": 80
+  },
+  {
+    "path": "public/asr-logo-white.png",
+    "size": 5104
+  },
+  {
+    "path": "public/asr-logo.png",
+    "size": 22453
+  },
+  {
+    "path": "public/sw.js",
+    "size": 567
+  },
+  {
+    "path": "src/App.jsx",
+    "size": 33427
+  },
+  {
+    "path": "src/lib/supabaseClient.js",
+    "size": 476
+  },
+  {
+    "path": "src/main.jsx",
+    "size": 187
+  },
+  {
+    "path": "src/styles.css",
+    "size": 17475
+  },
+  {
+    "path": "supabase/optional_sanity_setup.sql",
+    "size": 796
+  },
+  {
+    "path": "tailwind.config.js",
+    "size": 134
+  },
+  {
+    "path": "vercel.json",
+    "size": 60
+  },
+  {
+    "path": "vite.config.js",
+    "size": 132
+  }
+]
