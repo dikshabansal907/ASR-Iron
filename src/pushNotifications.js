@@ -1,7 +1,16 @@
 import { supabase } from './lib/supabaseClient';
 
+function notify(setToast, message) {
+  try {
+    if (typeof setToast === 'function') setToast(message);
+  } catch {}
+  // On some mobile layouts the toast may be hidden/cached; console keeps the exact reason visible in remote debugging.
+  console.log('[ASR Push]', message);
+}
+
 export function isPushSupported() {
   return typeof window !== 'undefined' &&
+    window.isSecureContext &&
     'serviceWorker' in navigator &&
     'PushManager' in window &&
     'Notification' in window;
@@ -21,36 +30,68 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
-function getPushApiUrl() {
-  // Vite localhost does not serve Vercel /api routes.
-  // For local testing, call the deployed Vercel API directly.
-  const isLocal = typeof window !== 'undefined' &&
-    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+async function ensureServiceWorker(setToast) {
+  if (!('serviceWorker' in navigator)) {
+    notify(setToast, 'Service worker is not supported on this browser.');
+    return null;
+  }
 
-  if (isLocal) return 'https://asriron.vercel.app/api/send-push';
-  return '/api/send-push';
+  try {
+    // If already registered, this will resolve quickly. If not, it registers /sw.js from public/sw.js.
+    const registration = await navigator.serviceWorker.register('/sw.js');
+    await navigator.serviceWorker.ready;
+    return registration;
+  } catch (err) {
+    console.error('[ASR Push] Service worker registration failed', err);
+    notify(setToast, `Service worker failed: ${err?.message || 'unknown error'}`);
+    return null;
+  }
 }
 
 export async function enablePushForUser(user, setToast = () => {}) {
   try {
-    if (!isPushSupported()) {
-      setToast('Phone push is not supported here. On iPhone, install/open the Home Screen app first.');
+    if (typeof window === 'undefined') return null;
+
+    if (!window.isSecureContext) {
+      notify(setToast, 'Phone alerts need HTTPS. Open the hosted Vercel app, not local/in-app browser.');
+      return null;
+    }
+
+    if (!('Notification' in window)) {
+      notify(setToast, 'This browser does not support notification permission. On iPhone, add ASR Iron to Home Screen and open from the app icon.');
+      return null;
+    }
+
+    if (!('PushManager' in window)) {
+      notify(setToast, 'PushManager is not available. On iPhone, open the installed Home Screen app.');
       return null;
     }
 
     const publicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
     if (!publicKey) {
-      setToast('Missing VITE_VAPID_PUBLIC_KEY. Add it in Vercel and redeploy.');
+      notify(setToast, 'Missing VITE_VAPID_PUBLIC_KEY. Add it in Vercel and redeploy.');
       return null;
     }
 
-    const permission = await Notification.requestPermission();
+    const registration = await ensureServiceWorker(setToast);
+    if (!registration) return null;
+
+    let permission = Notification.permission;
+    if (permission === 'default') {
+      // Must be called directly from the button tap/click handler.
+      permission = await Notification.requestPermission();
+    }
+
+    if (permission === 'denied') {
+      notify(setToast, 'Notifications are blocked. Enable them from phone browser/app notification settings.');
+      return null;
+    }
+
     if (permission !== 'granted') {
-      setToast('Notification permission was not allowed.');
+      notify(setToast, `Notification permission is ${permission}.`);
       return null;
     }
 
-    const registration = await navigator.serviceWorker.ready;
     let subscription = await registration.pushManager.getSubscription();
 
     if (!subscription) {
@@ -61,7 +102,7 @@ export async function enablePushForUser(user, setToast = () => {}) {
     }
 
     if (!supabase) {
-      setToast('Supabase is not connected. Cannot save phone subscription.');
+      notify(setToast, 'Supabase is not connected. Cannot save phone subscription.');
       return subscription;
     }
 
@@ -80,23 +121,23 @@ export async function enablePushForUser(user, setToast = () => {}) {
       .upsert(row, { onConflict: 'endpoint' });
 
     if (error) {
-      console.error('[push] subscription save failed', error);
-      setToast(error.message || 'Could not save phone subscription.');
+      console.error('[ASR Push] Supabase subscription save failed', error);
+      notify(setToast, error.message || 'Could not save phone subscription.');
       return subscription;
     }
 
-    setToast('Phone alerts enabled on this device.');
+    notify(setToast, 'Phone alerts enabled on this device.');
     return subscription;
   } catch (err) {
-    console.error('[push] enable failed', err);
-    setToast(err?.message || 'Could not enable phone alerts.');
+    console.error('[ASR Push] Enable failed', err);
+    notify(setToast, err?.message || 'Could not enable phone alerts.');
     return null;
   }
 }
 
 export async function sendSystemPushNotification({ target = 'all', title, message, url = '/' }) {
   try {
-    const response = await fetch(getPushApiUrl(), {
+    const response = await fetch('/api/send-push', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ target, title, message, url })
@@ -111,13 +152,13 @@ export async function sendSystemPushNotification({ target = 'all', title, messag
     }
 
     if (!response.ok) {
-      console.warn('[push] send failed', response.status, data);
+      console.warn('[ASR Push] send failed', response.status, data);
       return { ok: false, status: response.status, data };
     }
 
     return data || { ok: true };
   } catch (err) {
-    console.warn('[push] send failed', err);
+    console.warn('[ASR Push] send failed', err);
     return { ok: false, error: err?.message || String(err) };
   }
 }
