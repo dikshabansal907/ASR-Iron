@@ -1,0 +1,11 @@
+.alerts-settings-card { border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.alerts-settings-card.on { border-color: #86efac; background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%); }
+.alerts-settings-card.off { border-color: #fed7aa; background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%); }
+.alerts-radio-row { display: inline-flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 950; white-space: nowrap; }
+.alerts-radio-row input { width: 24px; height: 24px; accent-color: #16a34a; }
+.alert-status-green { color: #166534; background: #dcfce7; border-radius: 999px; padding: 7px 10px; }
+.alert-status-muted { color: #9a3412; background: #ffedd5; border-radius: 999px; padding: 7px 10px; }
+.notification-history-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.notification-history-head .section-title { margin: 0; }
+.notification-history-card { margin-bottom: 10px; }
+@media (max-width: 720px) { .alerts-settings-card, .notification-history-head { align-items: flex-start; flex-direction: column; } .alerts-radio-row, .notification-history-head .btn { width: 100%; } }

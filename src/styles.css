@@ -1621,6 +1621,90 @@ textarea:focus {
   .header-logout-btn { width: 38px; height: 38px; padding: 0; }
 }
 
+/* Notification history tab polish */
+.notification-history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.notification-history-head .section-title {
+  margin: 0;
+}
+.notification-history-card {
+  margin-bottom: 10px;
+}
+@media (max-width: 720px) {
+  .notification-history-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .notification-history-head .btn {
+    width: 100%;
+  }
+}
+/* Alerts page + one-time notification toast UI */
+.alerts-settings-card {
+  border: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.alerts-settings-card.on {
+  border-color: #86efac;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+}
+.alerts-settings-card.off {
+  border-color: #fed7aa;
+  background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%);
+}
+.alerts-radio-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+.alerts-radio-row input {
+  width: 24px;
+  height: 24px;
+  accent-color: #16a34a;
+}
+.alert-status-green {
+  color: #166534;
+  background: #dcfce7;
+  border-radius: 999px;
+  padding: 7px 10px;
+}
+.alert-status-muted {
+  color: #9a3412;
+  background: #ffedd5;
+  border-radius: 999px;
+  padding: 7px 10px;
+}
+.notification-history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.notification-history-head .section-title { margin: 0; }
+.notification-history-card { margin-bottom: 10px; }
+@media (max-width: 720px) {
+  .alerts-settings-card,
+  .notification-history-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .alerts-radio-row,
+  .notification-history-head .btn {
+    width: 100%;
+  }
+}
 
 @media(max-width:920px) {
     .notification-history-card {
@@ -1634,4 +1718,797 @@ textarea:focus {
     .notification-mini-card p {
         font-size: 12px
     }
+
+.alerts-settings-card { border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.alerts-settings-card.on { border-color: #86efac; background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%); }
+.alerts-settings-card.off { border-color: #fed7aa; background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%); }
+.alerts-radio-row { display: inline-flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 950; white-space: nowrap; }
+.alerts-radio-row input { width: 24px; height: 24px; accent-color: #16a34a; }
+.alert-status-green { color: #166534; background: #dcfce7; border-radius: 999px; padding: 7px 10px; }
+.alert-status-muted { color: #9a3412; background: #ffedd5; border-radius: 999px; padding: 7px 10px; }
+.notification-history-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.notification-history-head .section-title { margin: 0; }
+.notification-history-card { margin-bottom: 10px; }
+@media (max-width: 720px) { .alerts-settings-card, .notification-history-head { align-items: flex-start; flex-direction: column; } .alerts-radio-row, .notification-history-head .btn { width: 100%; } }
+
+
+/* Hide old always-visible phone alert prompts/buttons. Alerts page controls this now. */
+.phone-alert-visible-card,
+.header-actions .push-enable-btn {
+  display: none !important;
+}
+
+/* ASR Alerts menu cleanup: hide old header Phone Alerts button. Alerts page controls ON/OFF now. */
+.header-actions .push-enable-btn,
+.phone-alert-visible-card {
+  display: none !important;
+}
+
+}
+
+/* =========================================================
+   ASR Alerts final cleanup: one Alerts item + toggle switch
+   ========================================================= */
+
+/* Hide old header Phone Alerts button/card. Alerts page manages alert state now. */
+.header-actions .push-enable-btn,
+.header-actions button[title="Enable phone notifications"],
+.phone-alert-visible-card {
+  display: none !important;
+}
+
+/* Alerts ON/OFF row */
+.alerts-radio-row {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  font-size: 12px !important;
+  font-weight: 950 !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+}
+
+/* Convert checkbox into a real toggle switch */
+.alerts-radio-row input[type="checkbox"] {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  width: 52px !important;
+  height: 28px !important;
+  border-radius: 999px !important;
+  border: 0 !important;
+  outline: none !important;
+  cursor: pointer !important;
+  background: #fed7aa !important;
+  position: relative !important;
+  box-shadow: inset 0 0 0 1px rgba(154, 52, 18, 0.18) !important;
+  transition: 0.2s ease !important;
+}
+
+.alerts-radio-row input[type="checkbox"]::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 4px !important;
+  left: 4px !important;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 999px !important;
+  background: #ffffff !important;
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.18) !important;
+  transition: 0.2s ease !important;
+}
+
+.alerts-radio-row input[type="checkbox"]:checked {
+  background: #22c55e !important;
+  box-shadow: inset 0 0 0 1px rgba(22, 101, 52, 0.18) !important;
+}
+
+.alerts-radio-row input[type="checkbox"]:checked::before {
+  transform: translateX(24px) !important;
+}
+
+.alert-status-green {
+  color: #166534 !important;
+  background: #dcfce7 !important;
+  border-radius: 999px !important;
+  padding: 7px 10px !important;
+}
+
+.alert-status-muted {
+  color: #9a3412 !important;
+  background: #ffedd5 !important;
+  border-radius: 999px !important;
+  padding: 7px 10px !important;
+}
+
+.alerts-settings-card {
+  border: 1px solid #e2e8f0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 14px !important;
+}
+
+.alerts-settings-card.on {
+  border-color: #86efac !important;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%) !important;
+}
+
+.alerts-settings-card.off {
+  border-color: #fed7aa !important;
+  background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%) !important;
+}
+
+/* ASR Alerts duplicate-content cleanup */
+.header-actions .push-enable-btn,
+.header-actions button[title="Enable phone notifications"],
+.phone-alert-visible-card {
+  display: none !important;
+}
+
+@media (max-width: 720px) {
+  .alerts-settings-card {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+  }
+  .alerts-radio-row {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+}
+
+
+/* =========================================================
+   ASR unified light header + iPhone safe-area spacing
+   ========================================================= */
+
+.header.app-light-header,
+.header.dark.app-light-header {
+  position: sticky;
+  top: 0;
+  z-index: 70;
+  background: #ffffff !important;
+  color: #0A3E7A !important;
+  border-bottom: 1px solid #dbe6f3 !important;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06) !important;
+  padding-top: max(10px, env(safe-area-inset-top)) !important;
+  padding-bottom: 8px !important;
+}
+
+.app-light-head-inner {
+  min-height: 54px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+  width: 100% !important;
+  max-width: 1180px !important;
+  margin: 0 auto !important;
+  padding: 0 16px !important;
+}
+
+.app-light-brand-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  min-width: 0 !important;
+}
+
+.app-light-menu-btn,
+.header.dark .app-light-menu-btn {
+  width: 42px !important;
+  height: 42px !important;
+  border: 0 !important;
+  border-radius: 14px !important;
+  background: #eef4fb !important;
+  color: #0A3E7A !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+}
+
+.app-light-header .asr-logo {
+  width: 124px !important;
+  height: auto !important;
+  display: block !important;
+  object-fit: contain !important;
+}
+
+.app-light-role-badge,
+.header.dark .app-light-role-badge {
+  display: inline-block !important;
+  color: #0A3E7A !important;
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  font-size: 10px !important;
+  line-height: 1.25 !important;
+  letter-spacing: 0.13em !important;
+  font-weight: 950 !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+}
+
+.app-light-role-badge b {
+  color: #082f63 !important;
+  font-size: 13px !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  font-weight: 950 !important;
+}
+
+.app-light-logout-btn,
+.header.dark .app-light-logout-btn {
+  width: 40px !important;
+  height: 40px !important;
+  border-radius: 14px !important;
+  padding: 0 !important;
+  background: #eef4fb !important;
+  color: #0A3E7A !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 0 0 auto !important;
+}
+
+/* Keep content away from iPhone dynamic island / home indicator */
+.main {
+  padding-top: 16px !important;
+  padding-bottom: calc(96px + env(safe-area-inset-bottom)) !important;
+}
+
+.bottom-nav-scroll {
+  padding-bottom: calc(8px + env(safe-area-inset-bottom)) !important;
+  height: calc(74px + env(safe-area-inset-bottom)) !important;
+}
+
+.side-menu {
+  padding-top: max(18px, env(safe-area-inset-top)) !important;
+  padding-bottom: max(18px, env(safe-area-inset-bottom)) !important;
+}
+
+@media (max-width: 720px) {
+  .app-light-head-inner {
+    padding: 0 12px !important;
+    min-height: 58px !important;
+  }
+
+  .app-light-brand-row {
+    gap: 10px !important;
+  }
+
+  .app-light-header .asr-logo {
+    width: 106px !important;
+  }
+
+  .app-light-role-badge {
+    font-size: 9px !important;
+    max-width: 150px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .app-light-role-badge b {
+    font-size: 12px !important;
+  }
+
+  .main {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    padding-top: 14px !important;
+    padding-bottom: calc(104px + env(safe-area-inset-bottom)) !important;
+  }
+}
+
+
+/* =========================================================
+   ASR Quote + Daily Rates + Sidebar polish update
+   ========================================================= */
+.side-logo-card {
+  background: #ffffff !important;
+  border-radius: 18px !important;
+  padding: 8px 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.16) !important;
+}
+.side-logo-card .asr-logo {
+  width: 138px !important;
+  max-width: 100% !important;
+}
+.market-top-toggle {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 10px !important;
+  font-weight: 950 !important;
+  color: #0A3E7A !important;
+  background: #eff6ff !important;
+  border: 1px solid #bfdbfe !important;
+  border-radius: 999px !important;
+  padding: 5px 7px !important;
+  margin-right: 6px !important;
+}
+.market-top-toggle input {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  width: 34px !important;
+  height: 20px !important;
+  border-radius: 999px !important;
+  background: #cbd5e1 !important;
+  position: relative !important;
+  cursor: pointer !important;
+  transition: 0.2s ease !important;
+}
+.market-top-toggle input::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 3px !important;
+  left: 3px !important;
+  width: 14px !important;
+  height: 14px !important;
+  background: #ffffff !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.2) !important;
+  transition: 0.2s ease !important;
+}
+.market-top-toggle input:checked {
+  background: #22c55e !important;
+}
+.market-top-toggle input:checked::before {
+  transform: translateX(14px) !important;
+}
+.quote-total,
+.estimated-invoice-total,
+.invoice-total {
+  order: 2 !important;
+  margin-bottom: 10px !important;
+}
+.quote-textarea,
+.editable-quote textarea,
+textarea.quote-edit,
+textarea[readonly] {
+  color: #0A3E7A !important;
+}
+.share-panel,
+.quote-share-actions {
+  order: 3 !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+.share-panel .btn,
+.quote-share-actions .btn {
+  min-height: 38px !important;
+  padding: 8px 12px !important;
+  border-radius: 14px !important;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+}
+@media (max-width: 720px) {
+  .side-logo-card .asr-logo { width: 118px !important; }
+  .share-panel .btn,
+  .quote-share-actions .btn { flex: 1 1 42% !important; }
+}
+
+
+/* =========================================================
+   ASR Master stability patch: share cleanup + alerts/menu fixes
+   ========================================================= */
+.header-actions .push-enable-btn,
+.header-actions button[title="Enable phone notifications"],
+.phone-alert-visible-card {
+  display: none !important;
+}
+.side-logo-card { background:#fff !important; border-radius:18px !important; padding:8px 10px !important; display:inline-flex !important; align-items:center !important; justify-content:center !important; box-shadow:0 8px 22px rgba(15,23,42,.16) !important; }
+.side-logo-card .asr-logo { width:138px !important; max-width:100% !important; }
+.alerts-radio-row { display:inline-flex !important; align-items:center !important; gap:12px !important; font-size:12px !important; font-weight:950 !important; white-space:nowrap !important; cursor:pointer !important; }
+.alerts-radio-row input[type="checkbox"] { appearance:none !important; -webkit-appearance:none !important; width:52px !important; height:28px !important; border-radius:999px !important; border:0 !important; outline:none !important; cursor:pointer !important; background:#fed7aa !important; position:relative !important; box-shadow:inset 0 0 0 1px rgba(154,52,18,.18) !important; transition:.2s ease !important; }
+.alerts-radio-row input[type="checkbox"]::before { content:"" !important; position:absolute !important; top:4px !important; left:4px !important; width:20px !important; height:20px !important; border-radius:999px !important; background:#fff !important; box-shadow:0 3px 8px rgba(15,23,42,.18) !important; transition:.2s ease !important; }
+.alerts-radio-row input[type="checkbox"]:checked { background:#22c55e !important; }
+.alerts-radio-row input[type="checkbox"]:checked::before { transform:translateX(24px) !important; }
+.alert-status-green { color:#166534 !important; background:#dcfce7 !important; border-radius:999px !important; padding:7px 10px !important; }
+.alert-status-muted { color:#9a3412 !important; background:#ffedd5 !important; border-radius:999px !important; padding:7px 10px !important; }
+.market-top-toggle input { cursor:pointer !important; }
+
+
+/* =========================================================
+   ASR Master stability patch v2: reset/share + alerts/menu fixes
+   ========================================================= */
+.header-actions .push-enable-btn,
+.header-actions button[title="Enable phone notifications"],
+.phone-alert-visible-card { display: none !important; }
+.side-logo-card { background:#fff !important; border-radius:18px !important; padding:8px 10px !important; display:inline-flex !important; align-items:center !important; justify-content:center !important; box-shadow:0 8px 22px rgba(15,23,42,.16) !important; }
+.side-logo-card .asr-logo { width:138px !important; max-width:100% !important; }
+.alerts-radio-row { display:inline-flex !important; align-items:center !important; gap:12px !important; font-size:12px !important; font-weight:950 !important; white-space:nowrap !important; cursor:pointer !important; }
+.alerts-radio-row input[type="checkbox"] { appearance:none !important; -webkit-appearance:none !important; width:52px !important; height:28px !important; border-radius:999px !important; border:0 !important; outline:none !important; cursor:pointer !important; background:#fed7aa !important; position:relative !important; box-shadow:inset 0 0 0 1px rgba(154,52,18,.18) !important; transition:.2s ease !important; }
+.alerts-radio-row input[type="checkbox"]::before { content:"" !important; position:absolute !important; top:4px !important; left:4px !important; width:20px !important; height:20px !important; border-radius:999px !important; background:#fff !important; box-shadow:0 3px 8px rgba(15,23,42,.18) !important; transition:.2s ease !important; }
+.alerts-radio-row input[type="checkbox"]:checked { background:#22c55e !important; }
+.alerts-radio-row input[type="checkbox"]:checked::before { transform:translateX(24px) !important; }
+.alert-status-green { color:#166534 !important; background:#dcfce7 !important; border-radius:999px !important; padding:7px 10px !important; }
+.alert-status-muted { color:#9a3412 !important; background:#ffedd5 !important; border-radius:999px !important; padding:7px 10px !important; }
+
+
+/* =========================================================
+   ASR requested UI updates: white sidebar, invoice/share order,
+   Daily Rates top-scroll toggle
+   ========================================================= */
+.side-menu {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-right: 1px solid #e2e8f0 !important;
+}
+.side-menu-head {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+.side-menu-title {
+  color: #64748b !important;
+}
+.side-menu-item {
+  background: #f8fafc !important;
+  color: #334155 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+.side-menu-item.active,
+.side-menu-item:hover {
+  background: #eff6ff !important;
+  color: #0A3E7A !important;
+  border-color: #bfdbfe !important;
+}
+.side-close {
+  background: #eef4fb !important;
+  color: #0A3E7A !important;
+}
+.side-logo-card {
+  background: #ffffff !important;
+  border-radius: 18px !important;
+  padding: 8px 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.12) !important;
+}
+.side-logo-card .asr-logo {
+  width: 138px !important;
+  max-width: 100% !important;
+}
+.market-top-toggle {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 10px !important;
+  font-weight: 950 !important;
+  color: #0A3E7A !important;
+  background: #eff6ff !important;
+  border: 1px solid #bfdbfe !important;
+  border-radius: 999px !important;
+  padding: 5px 7px !important;
+  margin-right: 6px !important;
+}
+.market-top-toggle input {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  width: 34px !important;
+  height: 20px !important;
+  border-radius: 999px !important;
+  background: #cbd5e1 !important;
+  position: relative !important;
+  cursor: pointer !important;
+  transition: 0.2s ease !important;
+}
+.market-top-toggle input::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 3px !important;
+  left: 3px !important;
+  width: 14px !important;
+  height: 14px !important;
+  background: #ffffff !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.2) !important;
+  transition: 0.2s ease !important;
+}
+.market-top-toggle input:checked {
+  background: #22c55e !important;
+}
+.market-top-toggle input:checked::before {
+  transform: translateX(14px) !important;
+}
+/* Keep estimated invoice above WhatsApp/Copy/Share/Reset buttons */
+.quote-total,
+.estimated-invoice-total,
+.invoice-total,
+.quote-summary-total,
+.total-row {
+  order: 2 !important;
+  margin-bottom: 10px !important;
+}
+.share-panel,
+.quote-share-actions,
+.share-actions {
+  order: 3 !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+.share-panel .btn,
+.quote-share-actions .btn,
+.share-actions .btn {
+  min-height: 38px !important;
+  padding: 8px 12px !important;
+  border-radius: 14px !important;
+  font-size: 11px !important;
+  font-weight: 950 !important;
+}
+@media (max-width: 720px) {
+  .side-logo-card .asr-logo { width: 118px !important; }
+  .share-panel .btn,
+  .quote-share-actions .btn,
+  .share-actions .btn { flex: 1 1 42% !important; }
+}
+
+
+/* =========================================================
+   ASR Daily Rate label + Top toggle fix
+   ========================================================= */
+.market-top-toggle {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 10px !important;
+  font-weight: 950 !important;
+  color: #0A3E7A !important;
+  background: #eff6ff !important;
+  border: 1px solid #bfdbfe !important;
+  border-radius: 999px !important;
+  padding: 5px 7px !important;
+  margin-right: 6px !important;
+  vertical-align: middle !important;
+}
+.market-top-toggle input {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  width: 34px !important;
+  height: 20px !important;
+  border-radius: 999px !important;
+  background: #cbd5e1 !important;
+  position: relative !important;
+  cursor: pointer !important;
+  transition: 0.2s ease !important;
+}
+.market-top-toggle input::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 3px !important;
+  left: 3px !important;
+  width: 14px !important;
+  height: 14px !important;
+  background: #ffffff !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.2) !important;
+  transition: 0.2s ease !important;
+}
+.market-top-toggle input:checked { background: #22c55e !important; }
+.market-top-toggle input:checked::before { transform: translateX(14px) !important; }
+
+
+/* =========================================================
+   ASR Daily Rate Top Scroll Visibility Panel
+   ========================================================= */
+.top-scroll-visibility-panel {
+  border: 1px solid #dbeafe !important;
+  background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%) !important;
+}
+.visibility-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.visibility-toggle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
+  gap: 10px;
+}
+.visibility-toggle-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 11px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 12px;
+  font-weight: 900;
+}
+.visibility-toggle-card.on {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+.visibility-toggle-card.off {
+  border-color: #fed7aa;
+  background: #fff7ed;
+}
+.visibility-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.visibility-state {
+  font-size: 10px;
+  font-weight: 950;
+  color: #64748b;
+}
+.visibility-toggle-card.on .visibility-state { color: #166534; }
+.visibility-toggle-card.off .visibility-state { color: #9a3412; }
+.visibility-toggle-card input {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: #cbd5e1;
+  position: relative;
+  cursor: pointer;
+  transition: .2s ease;
+  flex: 0 0 auto;
+}
+.visibility-toggle-card input::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(15,23,42,.22);
+  transition: .2s ease;
+}
+.visibility-toggle-card input:checked { background: #22c55e; }
+.visibility-toggle-card input:checked::before { transform: translateX(16px); }
+@media (max-width: 720px) {
+  .visibility-toggle-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .visibility-toggle-card { padding: 9px; font-size: 11px; }
+}
+
+
+/* =========================================================
+   ASR Daily Rate card-level Top toggle
+   ========================================================= */
+.top-scroll-visibility-panel {
+  display: none !important;
+}
+.market-card-top-toggle {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 10px !important;
+  font-weight: 950 !important;
+  color: #0A3E7A !important;
+  background: #eff6ff !important;
+  border: 1px solid #bfdbfe !important;
+  border-radius: 999px !important;
+  padding: 5px 7px !important;
+  margin-left: 8px !important;
+  vertical-align: middle !important;
+  cursor: pointer !important;
+}
+.market-card-top-toggle input {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  width: 34px !important;
+  height: 20px !important;
+  border-radius: 999px !important;
+  background: #cbd5e1 !important;
+  position: relative !important;
+  cursor: pointer !important;
+  transition: 0.2s ease !important;
+  flex: 0 0 auto !important;
+}
+.market-card-top-toggle input::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 3px !important;
+  left: 3px !important;
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 5px rgba(15,23,42,.22) !important;
+  transition: 0.2s ease !important;
+}
+.market-card-top-toggle input:checked { background: #22c55e !important; }
+.market-card-top-toggle input:checked::before { transform: translateX(14px) !important; }
+@media (max-width: 720px) {
+  .market-card-top-toggle { margin-left: 4px !important; padding: 4px 6px !important; font-size: 9px !important; }
+}
+
+
+/* =========================================================
+   ASR: Top toggle only inside Daily Rate item cards
+   ========================================================= */
+/* Hide Top toggle inside top horizontal scroll cards only */
+.ticker .market-card-top-toggle,
+.ticker-row .market-card-top-toggle,
+.top-scroll .market-card-top-toggle,
+.top-scrollable .market-card-top-toggle,
+.market-scroll .market-card-top-toggle,
+.rate-strip .market-card-top-toggle,
+.rates-strip .market-card-top-toggle,
+.scroll-list .market-card-top-toggle,
+.daily-rate-ticker .market-card-top-toggle,
+.daily-rates-ticker .market-card-top-toggle,
+.rate-ticker .market-card-top-toggle,
+.top-rates .market-card-top-toggle,
+.top-rate-list .market-card-top-toggle,
+.top-scroll-visibility-panel {
+  display: none !important;
+}
+
+/* Card-level Top toggle alignment */
+.market-card-top-toggle {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  font-size: 10px !important;
+  font-weight: 950 !important;
+  color: #0A3E7A !important;
+  background: #eff6ff !important;
+  border: 1px solid #bfdbfe !important;
+  border-radius: 999px !important;
+  padding: 5px 7px !important;
+  margin-left: 8px !important;
+  vertical-align: middle !important;
+  cursor: pointer !important;
+  line-height: 1 !important;
+}
+.market-card-top-toggle input {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  width: 34px !important;
+  height: 20px !important;
+  border-radius: 999px !important;
+  background: #cbd5e1 !important;
+  position: relative !important;
+  cursor: pointer !important;
+  transition: 0.2s ease !important;
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+}
+.market-card-top-toggle input::before {
+  content: '' !important;
+  position: absolute !important;
+  top: 3px !important;
+  left: 3px !important;
+  width: 14px !important;
+  height: 14px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  box-shadow: 0 2px 5px rgba(15,23,42,.22) !important;
+  transition: 0.2s ease !important;
+}
+.market-card-top-toggle input:checked { background: #22c55e !important; }
+.market-card-top-toggle input:checked::before { transform: translateX(14px) !important; }
+
+/* Better alignment when card title/header uses flex */
+.market-card-head,
+.market-card-header,
+.category-card-head,
+.category-card-header,
+.daily-rate-card-head,
+.daily-rate-card-header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+}
+@media (max-width: 720px) {
+  .market-card-top-toggle { margin-left: 4px !important; padding: 4px 6px !important; font-size: 9px !important; }
 }

@@ -136,6 +136,13 @@ export async function enablePushForUser(user, setToast = () => {}) {
 }
 
 export async function sendSystemPushNotification({ target = 'all', title, message, url = '/' }) {
+  // ASR_LOCAL_PUSH_SKIP: Vite localhost does not serve Vercel /api routes.
+  // Phone push should be tested from the deployed Vercel app. In local dev, skip the server call to avoid 404.
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    console.warn('[ASR Push] Local dev detected; skipping /api/send-push call. Test phone push from deployed Vercel app.');
+    return { ok: true, skippedLocalDev: true };
+  }
+
   try {
     const response = await fetch('/api/send-push', {
       method: 'POST',
