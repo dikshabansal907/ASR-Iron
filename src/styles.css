@@ -3218,3 +3218,15 @@ input::placeholder {
     font-size: 12px !important;
   }
 }
+
+
+/* =========================================================
+   ASR prevent Add Item mobile auto-scroll jump
+   ========================================================= */
+textarea,
+.editable-quotation-text,
+.quote-textarea,
+.quotation-textarea {
+  overflow-y: hidden !important;
+  scroll-margin-top: 96px !important;
+}
