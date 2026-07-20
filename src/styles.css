@@ -3230,3 +3230,28 @@ textarea,
   overflow-y: hidden !important;
   scroll-margin-top: 96px !important;
 }
+
+
+/* =========================================================
+   ASR hard stop Add Item auto-scroll jump
+   ========================================================= */
+html.asr-no-auto-scroll-now,
+body.asr-no-auto-scroll-now {
+  scroll-behavior: auto !important;
+  overflow-anchor: none !important;
+}
+
+.asr-no-auto-scroll-now textarea,
+.asr-no-auto-scroll-now .editable-quotation-text,
+.asr-no-auto-scroll-now .quote-textarea,
+.asr-no-auto-scroll-now .quotation-textarea {
+  scroll-margin-top: 0 !important;
+  scroll-margin-bottom: 0 !important;
+}
+
+textarea,
+.editable-quotation-text,
+.quote-textarea,
+.quotation-textarea {
+  overflow-y: hidden !important;
+}

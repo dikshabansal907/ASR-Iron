@@ -8,63 +8,93 @@ function ago(v) { if (!v) return 'not updated'; const ms = Date.now() - new Date
 function delta(r) { const d = Number((num(r.daily_rate) - num(r.previous_daily_rate)).toFixed(2)); if (d > 0) return { cls: 'up', icon: <TrendingUp size={12} />, txt: `+${inr(d)}` }; if (d < 0) return { cls: 'down', icon: <TrendingDown size={12} />, txt: `-${inr(Math.abs(d))}` }; return { cls: 'flat', icon: <MinusCircle size={12} />, txt: 'No change' } }
 function Logo({ dark = false, loading = false }) { return <img src={dark ? '/asr-logo-white.png' : '/asr-logo.png'} alt="ASR Iron" className={`asr-logo ${loading ? 'asr-logo-loading' : ''}`} draggable="false" /> }
 export default function App() {
-    // ASR_PREVENT_ADD_ITEM_SCROLL_JUMP: keep mobile screen position stable after Add Item.
+    // ASR_HARD_STOP_ADD_ITEM_AUTOSCROLL: do not jump to editable quote text after Add Item.
     useEffect(() => {
-        let restoreUntil = 0;
         let savedX = 0;
         let savedY = 0;
-        let raf1 = 0;
-        let raf2 = 0;
-        const isAddItemTarget = (target) => {
-            const el = target?.closest?.('button, input[type="submit"], [role="button"]');
-            if (!el) return false;
-            const text = String(el.textContent || el.value || el.getAttribute('aria-label') || '').toLowerCase();
-            return text.includes('add item') || text.includes('add to summary') || text.includes('add to quotation');
+        let activeUntil = 0;
+        let timers = [];
+
+        const getButton = (target) => target?.closest?.('button, input[type="submit"], [role="button"]');
+        const isAddItemButton = (target) => {
+            const button = getButton(target);
+            if (!button) return false;
+            const raw = [
+                button.textContent,
+                button.value,
+                button.getAttribute('aria-label'),
+                button.getAttribute('title')
+            ].filter(Boolean).join(' ').toLowerCase();
+            return raw.includes('add item') || raw.includes('add to summary') || raw.includes('add to quotation') || raw.includes('add estimate');
         };
-        const savePosition = () => {
+
+        const capture = () => {
             savedX = window.scrollX || document.documentElement.scrollLeft || 0;
             savedY = window.scrollY || document.documentElement.scrollTop || 0;
-            restoreUntil = Date.now() + 600;
+            activeUntil = Date.now() + 1800;
+            document.documentElement.classList.add('asr-no-auto-scroll-now');
+            document.body.classList.add('asr-no-auto-scroll-now');
+            try { document.activeElement?.blur?.(); } catch {}
         };
-        const restorePosition = () => {
-            if (!restoreUntil || Date.now() > restoreUntil) return;
-            try { window.scrollTo(savedX, savedY); } catch {}
-            raf1 = requestAnimationFrame(() => {
-                try { window.scrollTo(savedX, savedY); } catch {}
-                raf2 = requestAnimationFrame(() => {
-                    if (Date.now() <= restoreUntil) {
-                        try { window.scrollTo(savedX, savedY); } catch {}
-                    }
-                });
-            });
+
+        const restore = () => {
+            if (!activeUntil || Date.now() > activeUntil) return;
+            try { window.scrollTo({ left: savedX, top: savedY, behavior: 'auto' }); } catch { try { window.scrollTo(savedX, savedY); } catch {} }
         };
-        const onPointerDown = (event) => {
-            if (isAddItemTarget(event.target)) savePosition();
+
+        const scheduleRestore = () => {
+            timers.forEach(clearTimeout);
+            timers = [0, 20, 60, 120, 220, 400, 700, 1100, 1600].map((delay) => setTimeout(restore, delay));
+            setTimeout(() => {
+                if (Date.now() > activeUntil) {
+                    document.documentElement.classList.remove('asr-no-auto-scroll-now');
+                    document.body.classList.remove('asr-no-auto-scroll-now');
+                }
+            }, 1900);
         };
-        const onClick = (event) => {
-            if (isAddItemTarget(event.target)) {
-                savePosition();
-                setTimeout(restorePosition, 0);
-                setTimeout(restorePosition, 80);
-                setTimeout(restorePosition, 180);
-                setTimeout(() => { restoreUntil = 0; }, 700);
+
+        const handlePointerDown = (event) => {
+            if (isAddItemButton(event.target)) capture();
+        };
+
+        const handleClick = (event) => {
+            if (isAddItemButton(event.target)) {
+                capture();
+                scheduleRestore();
             }
         };
-        const observer = new MutationObserver(() => restorePosition());
-        document.addEventListener('pointerdown', onPointerDown, true);
-        document.addEventListener('click', onClick, true);
-        observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+
+        const handleSubmit = (event) => {
+            const submitter = event.submitter;
+            if (submitter && isAddItemButton(submitter)) {
+                capture();
+                scheduleRestore();
+            }
+        };
+
+        const observer = new MutationObserver(() => restore());
+        document.addEventListener('touchstart', handlePointerDown, true);
+        document.addEventListener('pointerdown', handlePointerDown, true);
+        document.addEventListener('mousedown', handlePointerDown, true);
+        document.addEventListener('click', handleClick, true);
+        document.addEventListener('submit', handleSubmit, true);
+        observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true });
+
         return () => {
-            document.removeEventListener('pointerdown', onPointerDown, true);
-            document.removeEventListener('click', onClick, true);
+            timers.forEach(clearTimeout);
             observer.disconnect();
-            cancelAnimationFrame(raf1);
-            cancelAnimationFrame(raf2);
+            document.removeEventListener('touchstart', handlePointerDown, true);
+            document.removeEventListener('pointerdown', handlePointerDown, true);
+            document.removeEventListener('mousedown', handlePointerDown, true);
+            document.removeEventListener('click', handleClick, true);
+            document.removeEventListener('submit', handleSubmit, true);
+            document.documentElement.classList.remove('asr-no-auto-scroll-now');
+            document.body.classList.remove('asr-no-auto-scroll-now');
         };
     }, []);
 
 
-    // ASR_FORCE_VISIBLE_CLEAR_BUTTON_V4: force a visible delete-all button beside Reset, without MutationObserver loops.
+// ASR_FORCE_VISIBLE_CLEAR_BUTTON_V4: force a visible delete-all button beside Reset, without MutationObserver loops.
     const asrClearEveryQuoteState = () => {
         try { if (typeof setQuoteItems === 'function') setQuoteItems([]); } catch {}
         try { if (typeof setCalculatorCart === 'function') setCalculatorCart([]); } catch {}
