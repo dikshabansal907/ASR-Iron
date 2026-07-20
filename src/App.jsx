@@ -8,110 +8,137 @@ function ago(v) { if (!v) return 'not updated'; const ms = Date.now() - new Date
 function delta(r) { const d = Number((num(r.daily_rate) - num(r.previous_daily_rate)).toFixed(2)); if (d > 0) return { cls: 'up', icon: <TrendingUp size={12} />, txt: `+${inr(d)}` }; if (d < 0) return { cls: 'down', icon: <TrendingDown size={12} />, txt: `-${inr(Math.abs(d))}` }; return { cls: 'flat', icon: <MinusCircle size={12} />, txt: 'No change' } }
 function Logo({ dark = false, loading = false }) { return <img src={dark ? '/asr-logo-white.png' : '/asr-logo.png'} alt="ASR Iron" className={`asr-logo ${loading ? 'asr-logo-loading' : ''}`} draggable="false" /> }
 export default function App() {
-    // ASR_LOCK_VIEWPORT_DURING_ADD_ITEM: prevent mobile jump to editable quote text after Add Item.
+    // ASR_MOBILE_ADD_ITEM_SCROLL_FINAL_FIX: prevent mobile jump after Add Item by locking viewport and blocking textarea focus during the update.
     useEffect(() => {
-        let locked = false;
-        let savedY = 0;
+        let lockActive = false;
         let savedX = 0;
+        let savedY = 0;
         let unlockTimer = 0;
+        let restoreTimers = [];
+        const originalTextareaFocus = window.HTMLTextAreaElement?.prototype?.focus;
 
-        const isAddItemControl = (target) => {
-            const el = target?.closest?.('button, input[type="submit"], [role="button"]');
-            if (!el) return false;
-            const txt = [
-                el.textContent,
-                el.value,
-                el.getAttribute('aria-label'),
-                el.getAttribute('title')
-            ].filter(Boolean).join(' ').toLowerCase();
-            return txt.includes('add item') || txt.includes('add to summary') || txt.includes('add to quotation') || txt.includes('add estimate');
+        const textOf = (el) => [
+            el?.textContent,
+            el?.value,
+            el?.getAttribute?.('aria-label'),
+            el?.getAttribute?.('title'),
+            el?.getAttribute?.('data-action')
+        ].filter(Boolean).join(' ').toLowerCase();
+
+        const looksLikeCalculatorArea = (el) => {
+            const container = el?.closest?.('form, .calculator, .calculator-page, .quote, .quotation, .proposal, main, section, .area, .card');
+            const text = textOf(container || el);
+            return text.includes('quantity') || text.includes('category') || text.includes('quote') || text.includes('quotation') || text.includes('summary') || text.includes('estimate');
         };
 
-        const lockViewport = () => {
-            if (locked) return;
-            savedY = window.scrollY || document.documentElement.scrollTop || 0;
+        const isAddControl = (target) => {
+            const btn = target?.closest?.('button, input[type="submit"], [role="button"]');
+            if (!btn) return false;
+            const txt = textOf(btn);
+            if (txt.includes('add')) return true;
+            if (txt.includes('+') && looksLikeCalculatorArea(btn)) return true;
+            return false;
+        };
+
+        const restore = () => {
+            if (!lockActive) return;
+            try { window.scrollTo(savedX, savedY); } catch { }
+        };
+
+        const lock = () => {
+            if (lockActive) return;
             savedX = window.scrollX || document.documentElement.scrollLeft || 0;
-            locked = true;
-            try { document.activeElement?.blur?.(); } catch {}
-            document.documentElement.classList.add('asr-add-locking');
-            document.body.classList.add('asr-add-locking');
-            document.body.style.position = 'fixed';
-            document.body.style.top = '-' + savedY + 'px';
-            document.body.style.left = '0';
-            document.body.style.right = '0';
-            document.body.style.width = '100%';
+            savedY = window.scrollY || document.documentElement.scrollTop || 0;
+            lockActive = true;
+            try { document.activeElement?.blur?.(); } catch { }
+
+            // Prevent textarea focus from pulling the browser to the quote box while add/update is happening.
+            if (originalTextareaFocus && window.HTMLTextAreaElement?.prototype) {
+                window.HTMLTextAreaElement.prototype.focus = function patchedTextareaFocus(...args) {
+                    if (lockActive) return;
+                    return originalTextareaFocus.apply(this, args);
+                };
+            }
+
+            document.documentElement.classList.add('asr-add-item-lock');
+            document.body.classList.add('asr-add-item-lock');
+            document.documentElement.style.setProperty('overflow', 'hidden', 'important');
+            document.body.style.setProperty('overflow', 'hidden', 'important');
         };
 
-        const unlockViewport = () => {
-            if (!locked) return;
-            locked = false;
-            document.body.style.position = '';
-            document.body.style.top = '';
-            document.body.style.left = '';
-            document.body.style.right = '';
-            document.body.style.width = '';
-            document.documentElement.classList.remove('asr-add-locking');
-            document.body.classList.remove('asr-add-locking');
-            try { window.scrollTo(savedX, savedY); } catch {}
+        const unlock = () => {
+            if (!lockActive) return;
+            lockActive = false;
+            if (originalTextareaFocus && window.HTMLTextAreaElement?.prototype) {
+                window.HTMLTextAreaElement.prototype.focus = originalTextareaFocus;
+            }
+            document.documentElement.style.overflow = '';
+            document.body.style.overflow = '';
+            document.documentElement.classList.remove('asr-add-item-lock');
+            document.body.classList.remove('asr-add-item-lock');
+            try { window.scrollTo(savedX, savedY); } catch { }
         };
 
-        const scheduleUnlock = () => {
+        const schedule = () => {
+            restoreTimers.forEach(clearTimeout);
+            restoreTimers = [0, 25, 75, 150, 300, 550, 850].map((ms) => setTimeout(restore, ms));
             clearTimeout(unlockTimer);
-            unlockTimer = setTimeout(unlockViewport, 650);
+            unlockTimer = setTimeout(unlock, 950);
         };
 
-        const onPointerDown = (event) => {
-            if (isAddItemControl(event.target)) lockViewport();
+        const beforeAction = (event) => {
+            if (isAddControl(event.target)) lock();
         };
-        const onClick = (event) => {
-            if (isAddItemControl(event.target)) {
-                lockViewport();
-                scheduleUnlock();
+        const afterAction = (event) => {
+            if (isAddControl(event.target)) {
+                lock();
+                schedule();
             }
         };
         const onSubmit = (event) => {
-            if (event.submitter && isAddItemControl(event.submitter)) {
-                lockViewport();
-                scheduleUnlock();
+            if (event.submitter && isAddControl(event.submitter)) {
+                lock();
+                schedule();
             }
         };
 
-        document.addEventListener('touchstart', onPointerDown, true);
-        document.addEventListener('pointerdown', onPointerDown, true);
-        document.addEventListener('mousedown', onPointerDown, true);
-        document.addEventListener('click', onClick, true);
+        document.addEventListener('touchstart', beforeAction, true);
+        document.addEventListener('pointerdown', beforeAction, true);
+        document.addEventListener('mousedown', beforeAction, true);
+        document.addEventListener('click', afterAction, true);
         document.addEventListener('submit', onSubmit, true);
         return () => {
+            restoreTimers.forEach(clearTimeout);
             clearTimeout(unlockTimer);
-            unlockViewport();
-            document.removeEventListener('touchstart', onPointerDown, true);
-            document.removeEventListener('pointerdown', onPointerDown, true);
-            document.removeEventListener('mousedown', onPointerDown, true);
-            document.removeEventListener('click', onClick, true);
+            unlock();
+            document.removeEventListener('touchstart', beforeAction, true);
+            document.removeEventListener('pointerdown', beforeAction, true);
+            document.removeEventListener('mousedown', beforeAction, true);
+            document.removeEventListener('click', afterAction, true);
             document.removeEventListener('submit', onSubmit, true);
         };
     }, []);
 
 
-// ASR_FORCE_VISIBLE_CLEAR_BUTTON_V4: force a visible delete-all button beside Reset, without MutationObserver loops.
+    // ASR_FORCE_VISIBLE_CLEAR_BUTTON_V4: force a visible delete-all button beside Reset, without MutationObserver loops.
     const asrClearEveryQuoteState = () => {
-        try { if (typeof setQuoteItems === 'function') setQuoteItems([]); } catch {}
-        try { if (typeof setCalculatorCart === 'function') setCalculatorCart([]); } catch {}
-        try { if (typeof setCart === 'function') setCart([]); } catch {}
-        try { if (typeof setQuoteRows === 'function') setQuoteRows([]); } catch {}
-        try { if (typeof setProposalRows === 'function') setProposalRows([]); } catch {}
-        try { if (typeof setInvoiceRows === 'function') setInvoiceRows([]); } catch {}
-        try { if (typeof setEstimateItems === 'function') setEstimateItems([]); } catch {}
-        try { if (typeof setSummaryItems === 'function') setSummaryItems([]); } catch {}
-        try { if (typeof setLineItems === 'function') setLineItems([]); } catch {}
-        try { if (typeof setSelectedItems === 'function') setSelectedItems([]); } catch {}
+        try { if (typeof setQuoteItems === 'function') setQuoteItems([]); } catch { }
+        try { if (typeof setCalculatorCart === 'function') setCalculatorCart([]); } catch { }
+        try { if (typeof setCart === 'function') setCart([]); } catch { }
+        try { if (typeof setQuoteRows === 'function') setQuoteRows([]); } catch { }
+        try { if (typeof setProposalRows === 'function') setProposalRows([]); } catch { }
+        try { if (typeof setInvoiceRows === 'function') setInvoiceRows([]); } catch { }
+        try { if (typeof setEstimateItems === 'function') setEstimateItems([]); } catch { }
+        try { if (typeof setSummaryItems === 'function') setSummaryItems([]); } catch { }
+        try { if (typeof setLineItems === 'function') setLineItems([]); } catch { }
+        try { if (typeof setSelectedItems === 'function') setSelectedItems([]); } catch { }
 
-        try { if (typeof setQuoteText === 'function') setQuoteText(''); } catch {}
-        try { if (typeof setEditedQuoteText === 'function') setEditedQuoteText(''); } catch {}
-        try { if (typeof setQuoteManualText === 'function') setQuoteManualText(''); } catch {}
-        try { if (typeof setEditableQuoteText === 'function') setEditableQuoteText(''); } catch {}
-        try { if (typeof setShareText === 'function') setShareText(''); } catch {}
-        try { if (typeof setQuoteEdited === 'function') setQuoteEdited(false); } catch {}
+        try { if (typeof setQuoteText === 'function') setQuoteText(''); } catch { }
+        try { if (typeof setEditedQuoteText === 'function') setEditedQuoteText(''); } catch { }
+        try { if (typeof setQuoteManualText === 'function') setQuoteManualText(''); } catch { }
+        try { if (typeof setEditableQuoteText === 'function') setEditableQuoteText(''); } catch { }
+        try { if (typeof setShareText === 'function') setShareText(''); } catch { }
+        try { if (typeof setQuoteEdited === 'function') setQuoteEdited(false); } catch { }
 
         // Also clear the actual textarea immediately for visual feedback.
         document.querySelectorAll('textarea').forEach((ta) => {
@@ -122,16 +149,16 @@ export default function App() {
             }
         });
 
-        try { if (typeof setToast === 'function') setToast('Quotation cleared.'); } catch {}
+        try { if (typeof setToast === 'function') setToast('Quotation cleared.'); } catch { }
     };
 
     const asrConfirmClearEveryQuoteState = () => {
         const message = 'Delete all added items?';
         const run = () => asrClearEveryQuoteState();
-        try { if (typeof askDelete === 'function') return askDelete(message, run); } catch {}
-        try { if (typeof askConfirmation === 'function') return askConfirmation(message, run); } catch {}
-        try { if (typeof setConfirmBox === 'function') return setConfirmBox({ title: message, onYes: run }); } catch {}
-        try { if (typeof setConfirmModal === 'function') return setConfirmModal({ isOpen: true, message, onConfirm: run }); } catch {}
+        try { if (typeof askDelete === 'function') return askDelete(message, run); } catch { }
+        try { if (typeof askConfirmation === 'function') return askConfirmation(message, run); } catch { }
+        try { if (typeof setConfirmBox === 'function') return setConfirmBox({ title: message, onYes: run }); } catch { }
+        try { if (typeof setConfirmModal === 'function') return setConfirmModal({ isOpen: true, message, onConfirm: run }); } catch { }
         if (window.confirm('Are you sure you want to delete all the added items?')) run();
     };
 
@@ -175,39 +202,39 @@ export default function App() {
 
 
     function asrClearAllQuotesNow() {
-        try { if (typeof setQuoteItems === 'function') setQuoteItems([]); } catch {}
-        try { if (typeof setCalculatorCart === 'function') setCalculatorCart([]); } catch {}
-        try { if (typeof setCart === 'function') setCart([]); } catch {}
-        try { if (typeof setQuoteRows === 'function') setQuoteRows([]); } catch {}
-        try { if (typeof setProposalRows === 'function') setProposalRows([]); } catch {}
-        try { if (typeof setInvoiceRows === 'function') setInvoiceRows([]); } catch {}
-        try { if (typeof setEstimateItems === 'function') setEstimateItems([]); } catch {}
-        try { if (typeof setSummaryItems === 'function') setSummaryItems([]); } catch {}
-        try { if (typeof setLineItems === 'function') setLineItems([]); } catch {}
-        try { if (typeof setSelectedItems === 'function') setSelectedItems([]); } catch {}
+        try { if (typeof setQuoteItems === 'function') setQuoteItems([]); } catch { }
+        try { if (typeof setCalculatorCart === 'function') setCalculatorCart([]); } catch { }
+        try { if (typeof setCart === 'function') setCart([]); } catch { }
+        try { if (typeof setQuoteRows === 'function') setQuoteRows([]); } catch { }
+        try { if (typeof setProposalRows === 'function') setProposalRows([]); } catch { }
+        try { if (typeof setInvoiceRows === 'function') setInvoiceRows([]); } catch { }
+        try { if (typeof setEstimateItems === 'function') setEstimateItems([]); } catch { }
+        try { if (typeof setSummaryItems === 'function') setSummaryItems([]); } catch { }
+        try { if (typeof setLineItems === 'function') setLineItems([]); } catch { }
+        try { if (typeof setSelectedItems === 'function') setSelectedItems([]); } catch { }
 
-        try { if (typeof setQuoteText === 'function') setQuoteText(''); } catch {}
-        try { if (typeof setEditedQuoteText === 'function') setEditedQuoteText(''); } catch {}
-        try { if (typeof setQuoteManualText === 'function') setQuoteManualText(''); } catch {}
-        try { if (typeof setEditableQuoteText === 'function') setEditableQuoteText(''); } catch {}
-        try { if (typeof setShareText === 'function') setShareText(''); } catch {}
-        try { if (typeof setQuoteEdited === 'function') setQuoteEdited(false); } catch {}
+        try { if (typeof setQuoteText === 'function') setQuoteText(''); } catch { }
+        try { if (typeof setEditedQuoteText === 'function') setEditedQuoteText(''); } catch { }
+        try { if (typeof setQuoteManualText === 'function') setQuoteManualText(''); } catch { }
+        try { if (typeof setEditableQuoteText === 'function') setEditableQuoteText(''); } catch { }
+        try { if (typeof setShareText === 'function') setShareText(''); } catch { }
+        try { if (typeof setQuoteEdited === 'function') setQuoteEdited(false); } catch { }
 
-        try { if (typeof setToast === 'function') setToast('Quotation cleared.'); } catch {}
+        try { if (typeof setToast === 'function') setToast('Quotation cleared.'); } catch { }
     }
 
     function asrAskClearAllQuotes() {
         const message = 'Delete all added items?';
         const run = () => asrClearAllQuotesNow();
-        try { if (typeof askDelete === 'function') return askDelete(message, run); } catch {}
-        try { if (typeof askConfirmation === 'function') return askConfirmation(message, run); } catch {}
-        try { if (typeof setConfirmBox === 'function') return setConfirmBox({ title: message, onYes: run }); } catch {}
-        try { if (typeof setConfirmModal === 'function') return setConfirmModal({ isOpen: true, message, onConfirm: run }); } catch {}
+        try { if (typeof askDelete === 'function') return askDelete(message, run); } catch { }
+        try { if (typeof askConfirmation === 'function') return askConfirmation(message, run); } catch { }
+        try { if (typeof setConfirmBox === 'function') return setConfirmBox({ title: message, onYes: run }); } catch { }
+        try { if (typeof setConfirmModal === 'function') return setConfirmModal({ isOpen: true, message, onConfirm: run }); } catch { }
         if (window.confirm('Are you sure you want to delete all the added items?')) run();
     }
 
 
-// ASR_QUANTITY_ZERO_RUNTIME_FIX_V2: show quantity 0 as grey and let typing replace it directly.
+    // ASR_QUANTITY_ZERO_RUNTIME_FIX_V2: show quantity 0 as grey and let typing replace it directly.
     useEffect(() => {
         const isQuantityInput = (input) => {
             if (!input || input.tagName !== 'INPUT') return false;
@@ -318,7 +345,7 @@ export default function App() {
                         if (bottomSpace < 95) {
                             ;
                         }
-                    } catch {}
+                    } catch { }
                 });
             }
         };
@@ -354,7 +381,7 @@ export default function App() {
     });
 
 
-const [screen, setScreen] = useState('login'), [user, setUser] = useState(null), [fabricators, setFabricators] = useState([]), [submissions, setSubmissions] = useState([]), [items, setItems] = useState([]), [categories, setCategories] = useState([]), [rateItems, setRateItems] = useState([]), [loading, setLoading] = useState(true), [toast, setToast] = useState(''), [confirmBox, setConfirmBox] = useState(null), [sideOpen, setSideOpen] = useState(false);
+    const [screen, setScreen] = useState('login'), [user, setUser] = useState(null), [fabricators, setFabricators] = useState([]), [submissions, setSubmissions] = useState([]), [items, setItems] = useState([]), [categories, setCategories] = useState([]), [rateItems, setRateItems] = useState([]), [loading, setLoading] = useState(true), [toast, setToast] = useState(''), [confirmBox, setConfirmBox] = useState(null), [sideOpen, setSideOpen] = useState(false);
     // 2) Add this state inside App():
     const [pushPermission, setPushPermission] = useState(getPushPermission());
 
@@ -370,21 +397,21 @@ const [screen, setScreen] = useState('login'), [user, setUser] = useState(null),
     const [claimItemId, setClaimItemId] = useState(''), [claimQty, setClaimQty] = useState(''), [claimOk, setClaimOk] = useState(false);
     const [notifications, setNotifications] = useState([]), [newNotification, setNewNotification] = useState({ target: 'all', fabricator_id: '', title: '', message: '' });
     const [hiddenNotificationIds, setHiddenNotificationIds] = useState(() => {
-      try {
-        return JSON.parse(localStorage.getItem('asr_hidden_notification_ids') || '[]');
-      } catch {
-        return [];
-      }
+        try {
+            return JSON.parse(localStorage.getItem('asr_hidden_notification_ids') || '[]');
+        } catch {
+            return [];
+        }
     });
 
-const [alertPromptOpen, setAlertPromptOpen] = useState(false);
+    const [alertPromptOpen, setAlertPromptOpen] = useState(false);
 
-const [alertsPreference, setAlertsPreference] = useState(() =>
-  localStorage.getItem('asr_alerts_preference') || 'on'
-);
+    const [alertsPreference, setAlertsPreference] = useState(() =>
+        localStorage.getItem('asr_alerts_preference') || 'on'
+    );
 
-const notificationKey = n =>
-  String(n?.id || `${n?.title || ''}-${n?.created_at || ''}`);    
+    const notificationKey = n =>
+        String(n?.id || `${n?.title || ''}-${n?.created_at || ''}`);
     const sortedCategories = useMemo(() => [...categories].sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { numeric: true, sensitivity: 'base' })), [categories]);
     const marketCategories = useMemo(() => sortedCategories.filter(c => String(c.name).toLowerCase().includes(marketSearch.toLowerCase())), [sortedCategories, marketSearch]);
     const visibleSizes = useMemo(() => { let rows = rateItems.filter(x => x.category_id === categoryId); const c = categories.find(x => x.id === categoryId); if (c?.name?.toLowerCase() === 'pipe') rows = [...rows].reverse(); else rows = [...rows].sort((a, b) => String(a.name).localeCompare(String(b.name), undefined, { numeric: true, sensitivity: 'base' })); if (sizeSearch) rows = rows.filter(x => String(x.name).toLowerCase().includes(sizeSearch.toLowerCase())); return rows }, [rateItems, categoryId, categories, sizeSearch]);
@@ -423,15 +450,15 @@ const notificationKey = n =>
     async function sendNotification(e) {
         e.preventDefault(); if (!newNotification.title.trim() || !newNotification.message.trim()) return setToast('Enter notification title and message.'); let target = newNotification.target; if (target === 'specific_fabricator') { if (!newNotification.fabricator_id) return setToast('Select a fabricator.'); target = `fabricator:${newNotification.fabricator_id}` } const payload = { target, title: newNotification.title.trim(), message: newNotification.message.trim(), created_by: user?.name || 'Admin', created_at: new Date().toISOString() }; if (!supabase) { await saveNotificationLocal(payload); setToast('Notification saved locally.'); setNewNotification({ target: 'all', fabricator_id: '', title: '', message: '' }); return } const { data, error } = await supabase.from('notifications').insert(payload).select().single(); if (error) { await saveNotificationLocal(payload); setToast('Notifications table missing. Saved locally. Run SQL setup for live notifications.') } else { setNotifications(prev => [data, ...prev]); setToast('Notification sent.') } setNewNotification({ target: 'all', fabricator_id: '', title: '', message: '' })
         try {
-  await sendSystemPushNotification({
-    target,
-    title: newNotification.title.trim(),
-    message: newNotification.message.trim()
-  });
-} catch (err) {
-  console.warn('Push send failed', err);
-}
-}
+            await sendSystemPushNotification({
+                target,
+                title: newNotification.title.trim(),
+                message: newNotification.message.trim()
+            });
+        } catch (err) {
+            console.warn('Push send failed', err);
+        }
+    }
     async function deleteNotification(n) { askDelete(`Delete notification ${n.title}?`, async () => { if (String(n.id || '').startsWith('local_') || !supabase) { const updated = notifications.filter(x => x.id !== n.id); localStorage.setItem('asr_notifications', JSON.stringify(updated)); setNotifications(updated); setToast('Notification deleted.'); return } const { error } = await supabase.from('notifications').delete().eq('id', n.id); if (error) return setToast(error.message); setNotifications(prev => prev.filter(x => x.id !== n.id)); setToast('Notification deleted.') }) }
     function clearNotificationHistory() {
         const rows = user?.role === 'Admin' ? notifications : visibleNotifications;
@@ -522,16 +549,18 @@ const notificationKey = n =>
         </label>
     }
 
-    function marketPage() { return <div className="grid"><div className="area"><h2 className="section-title"><BarChart3 size={20} /> Daily Market Rates</h2><p className="section-note">Increment/decrement compares current value with previous saved update and remains after refresh.</p><input className="input search-box" placeholder="Search market category..." value={marketSearch} onChange={e => setMarketSearch(e.target.value)} /><form className="small-card" onSubmit={addMarket}><h3>Add New Market Item</h3><div className="grid grid-3"><input className="input" placeholder="Name" value={newSegment.name} onChange={e => setNewSegment({ ...newSegment, name: e.target.value })} /><input className="input" type="number" placeholder="Sizes" value={newSegment.rate} onChange={e => setNewSegment({ ...newSegment, rate: e.target.value })} /><input className="input" type="number" placeholder="Freight" value={newSegment.freight} onChange={e => setNewSegment({ ...newSegment, freight: e.target.value })} /></div><button className="btn btn-primary full">Add to Market</button>
-                                <button
-                                    type="button"
-                                    className="asr-clear-all-quote-jsx-btn"
-                                    title="Delete all added items"
-                                    aria-label="Delete all added items"
-                                    onClick={asrAskClearAllQuotes}
-                                >
-                                    🗑
-                                </button></form></div><div className="market-grid">{marketCategories.map(row => { const d = delta(row); return <div className="market-card" key={row.id}><div className="market-card-head"><div><div className="rate-name">{row.name}</div>{dailyRateItemTopToggle(row)}<div className="rate-value">{inr(row.daily_rate)}</div><div className={`rate-change ${d.cls}`}>{d.icon}{d.txt}</div><div className="rate-time">Last updated {ago(row.updated_at || row.created_at)}</div></div><button className="market-delete-btn" onClick={() => deleteSegment(row)}><Trash2 size={16} /></button></div><div className="market-update-grid"><div className="field"><label className="label">New Sizes</label><input className="input" type="number" defaultValue={row.daily_rate} onBlur={e => updateMarketRate(row, e.target.value, row.freight)} /></div><div className="field"><label className="label">Freight</label><input className="input" type="number" defaultValue={row.freight} onBlur={e => updateMarketRate(row, row.daily_rate, e.target.value)} /></div></div></div> })}</div></div> }
+    function marketPage() {
+        return <div className="grid"><div className="area"><h2 className="section-title"><BarChart3 size={20} /> Daily Market Rates</h2><p className="section-note">Increment/decrement compares current value with previous saved update and remains after refresh.</p><input className="input search-box" placeholder="Search market category..." value={marketSearch} onChange={e => setMarketSearch(e.target.value)} /><form className="small-card" onSubmit={addMarket}><h3>Add New Market Item</h3><div className="grid grid-3"><input className="input" placeholder="Name" value={newSegment.name} onChange={e => setNewSegment({ ...newSegment, name: e.target.value })} /><input className="input" type="number" placeholder="Sizes" value={newSegment.rate} onChange={e => setNewSegment({ ...newSegment, rate: e.target.value })} /><input className="input" type="number" placeholder="Freight" value={newSegment.freight} onChange={e => setNewSegment({ ...newSegment, freight: e.target.value })} /></div><button className="btn btn-primary full">Add to Market</button>
+            <button
+                type="button"
+                className="asr-clear-all-quote-jsx-btn"
+                title="Delete all added items"
+                aria-label="Delete all added items"
+                onClick={asrAskClearAllQuotes}
+            >
+                🗑
+            </button></form></div><div className="market-grid">{marketCategories.map(row => { const d = delta(row); return <div className="market-card" key={row.id}><div className="market-card-head"><div><div className="rate-name">{row.name}</div>{dailyRateItemTopToggle(row)}<div className="rate-value">{inr(row.daily_rate)}</div><div className={`rate-change ${d.cls}`}>{d.icon}{d.txt}</div><div className="rate-time">Last updated {ago(row.updated_at || row.created_at)}</div></div><button className="market-delete-btn" onClick={() => deleteSegment(row)}><Trash2 size={16} /></button></div><div className="market-update-grid"><div className="field"><label className="label">New Sizes</label><input className="input" type="number" defaultValue={row.daily_rate} onBlur={e => updateMarketRate(row, e.target.value, row.freight)} /></div><div className="field"><label className="label">Freight</label><input className="input" type="number" defaultValue={row.freight} onBlur={e => updateMarketRate(row, row.daily_rate, e.target.value)} /></div></div></div> })}</div></div>
+    }
     function dailyPage() { return <div className="area"><h2 className="section-title">Sizes Configuration</h2><div className="field"><label className="label">Select Segment</label><select value={categoryId} onChange={e => { setCategoryId(e.target.value); setSizeSearch('') }}>{sortedCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div><input className="input search-box" placeholder="Search size/name..." value={sizeSearch} onChange={e => setSizeSearch(e.target.value)} /><form className="small-card" onSubmit={addSize}><div className="grid grid-3"><input className="input" value={newSizeName} onChange={e => setNewSizeName(e.target.value)} placeholder="Size name" /><input className="input" type="number" value={newSizeDiff} onChange={e => setNewSizeDiff(e.target.value)} placeholder="Diff" /><button className="btn btn-primary">Add Size</button></div></form><div className="size-card-list">{visibleSizes.map(s => <div className="size-edit-card" key={s.id}><div className="size-edit-main"><input className="input size-name-input" defaultValue={s.name} onBlur={e => updateSizeName(s, e.target.value)} /><div className="size-preview">Preview: <b>{inr(unitRate(s.category_id, s.fixed_difference))}/kg</b></div></div><div className="size-edit-side"><input className="input diff-input" type="number" defaultValue={s.fixed_difference} onBlur={e => updateDiff(s, e.target.value)} /><button className="size-delete-btn" onClick={() => deleteSize(s)}><Trash2 size={16} /></button></div></div>)}</div></div> }
 
     function getCurrentQuoteText() {
@@ -611,7 +640,7 @@ const notificationKey = n =>
         try {
             if (typeof quoteText !== 'undefined' && quoteText && String(quoteText).trim()) return quoteText;
             if (typeof buildQuote === 'function') return buildQuote();
-        } catch {}
+        } catch { }
         return '';
     }
 
@@ -684,15 +713,15 @@ const notificationKey = n =>
         { id: 'alerts', label: 'Alerts', icon: <Bell size={18} /> },
         { id: 'history', label: 'History', icon: <History size={18} /> }
     ],
-    fabMenu = [
-        { id: 'apply', label: 'Apply', icon: <PlusCircle size={18} /> },
-        { id: 'alerts', label: 'Alerts', icon: <Bell size={18} /> },
-        { id: 'history', label: 'History', icon: <History size={18} /> }
-    ],
-    salesMenu = [
-        { id: 'calculator', label: 'Calculator', icon: <Calculator size={18} /> },
-        { id: 'alerts', label: 'Alerts', icon: <Bell size={18} /> }
-    ];
+        fabMenu = [
+            { id: 'apply', label: 'Apply', icon: <PlusCircle size={18} /> },
+            { id: 'alerts', label: 'Alerts', icon: <Bell size={18} /> },
+            { id: 'history', label: 'History', icon: <History size={18} /> }
+        ],
+        salesMenu = [
+            { id: 'calculator', label: 'Calculator', icon: <Calculator size={18} /> },
+            { id: 'alerts', label: 'Alerts', icon: <Bell size={18} /> }
+        ];
 
     function sideMenu(type) { const isAdmin = type === 'admin', isSales = type === 'salesman', list = isSales ? salesMenu : isAdmin ? adminMenu : fabMenu, current = isAdmin ? adminTab : fabTab, setTab = isAdmin ? setAdminTab : setFabTab; return <><div className={`sidebar-backdrop ${sideOpen ? 'show' : ''}`} onClick={() => setSideOpen(false)} /><aside className={`side-menu ${sideOpen ? 'open' : ''}`}><div className="side-menu-head"><div className="side-logo-card"><Logo /></div><button className="side-close" onClick={() => setSideOpen(false)}><X size={20} /></button></div><div className="side-menu-title">{isSales ? 'Salesman Menu' : isAdmin ? 'Admin Menu' : 'Fabricator Menu'}</div><div className="side-menu-list">{list.map(item => <button key={item.id} className={`side-menu-item ${current === item.id ? 'active' : ''}`} onClick={() => { setTab(item.id); setSideOpen(false) }}>{item.icon}<span>{item.label}</span></button>)}</div></aside></> }
     function bottomNav(type) { const isAdmin = type === 'admin', isSales = type === 'salesman', base = isSales ? salesMenu : isAdmin ? adminMenu : fabMenu, list = isAdmin ? base : [...base, { id: 'logout', label: 'Logout', icon: <LogOut size={18} /> }], current = isAdmin ? adminTab : fabTab; return <div className="bottom-nav-scroll">{list.map(item => <button key={item.id} className={current === item.id ? 'active' : ''} onClick={() => item.id === 'logout' ? logout() : isAdmin ? setAdminTab(item.id) : setFabTab(item.id)}>{item.icon}<span>{item.label}</span></button>)}</div> }
