@@ -231,7 +231,7 @@ export default function App() {
                         const rect = el.getBoundingClientRect();
                         const bottomSpace = window.innerHeight - rect.bottom;
                         if (bottomSpace < 95) {
-                            window.scrollBy({ top: 120 - bottomSpace, behavior: 'smooth' });
+                            ;
                         }
                     } catch {}
                 });

@@ -3157,3 +3157,64 @@ input::placeholder {
 .asr-clear-all-quote-jsx-btn {
   display: none !important;
 }
+
+
+/* =========================================================
+   ASR quote result highlight only on right-side totals
+   Copied/shareable text has no space after ₹.
+   ========================================================= */
+/* Highlight only explicit right-side total classes, not left-side rate math. */
+.quote-mini-total,
+.quote-row-total,
+.quote-price-total,
+.quote-item-total,
+.item-net-total,
+.item-final-total,
+.calculated-quote-summary .quote-total-value,
+.calculated-quote-summary .item-total,
+.quote-summary-card .quote-total-value,
+.quote-summary-card .item-total {
+  color: #047857 !important;
+  background: #dcfce7 !important;
+  border: 1px solid #86efac !important;
+  border-radius: 999px !important;
+  padding: 5px 10px !important;
+  font-weight: 950 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 76px !important;
+  box-shadow: 0 6px 16px rgba(4, 120, 87, 0.10) !important;
+}
+
+/* Compact quote rows: highlight the amount block that sits immediately before the delete X. */
+.quote-mini-row > b:nth-last-child(2),
+.quote-mini-row > span:nth-last-child(2),
+.quote-row > b:nth-last-child(2),
+.quote-row > span:nth-last-child(2),
+.quote-list-row > b:nth-last-child(2),
+.quote-list-row > span:nth-last-child(2) {
+  color: #047857 !important;
+  background: #dcfce7 !important;
+  border: 1px solid #86efac !important;
+  border-radius: 999px !important;
+  padding: 5px 10px !important;
+  font-weight: 950 !important;
+}
+
+@media (max-width: 720px) {
+  .quote-mini-total,
+  .quote-row-total,
+  .quote-price-total,
+  .quote-item-total,
+  .item-net-total,
+  .item-final-total,
+  .calculated-quote-summary .quote-total-value,
+  .calculated-quote-summary .item-total,
+  .quote-summary-card .quote-total-value,
+  .quote-summary-card .item-total {
+    min-width: 68px !important;
+    padding: 4px 8px !important;
+    font-size: 12px !important;
+  }
+}
