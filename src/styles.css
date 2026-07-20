@@ -3255,3 +3255,25 @@ textarea,
 .quotation-textarea {
   overflow-y: hidden !important;
 }
+
+
+/* =========================================================
+   ASR viewport lock during Add Item mobile update
+   ========================================================= */
+html.asr-add-locking,
+body.asr-add-locking {
+  scroll-behavior: auto !important;
+  overflow-anchor: none !important;
+  overscroll-behavior: none !important;
+}
+
+body.asr-add-locking {
+  touch-action: manipulation;
+}
+
+textarea,
+.editable-quotation-text,
+.quote-textarea,
+.quotation-textarea {
+  overflow-y: hidden !important;
+}

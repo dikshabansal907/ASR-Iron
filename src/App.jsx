@@ -8,88 +8,87 @@ function ago(v) { if (!v) return 'not updated'; const ms = Date.now() - new Date
 function delta(r) { const d = Number((num(r.daily_rate) - num(r.previous_daily_rate)).toFixed(2)); if (d > 0) return { cls: 'up', icon: <TrendingUp size={12} />, txt: `+${inr(d)}` }; if (d < 0) return { cls: 'down', icon: <TrendingDown size={12} />, txt: `-${inr(Math.abs(d))}` }; return { cls: 'flat', icon: <MinusCircle size={12} />, txt: 'No change' } }
 function Logo({ dark = false, loading = false }) { return <img src={dark ? '/asr-logo-white.png' : '/asr-logo.png'} alt="ASR Iron" className={`asr-logo ${loading ? 'asr-logo-loading' : ''}`} draggable="false" /> }
 export default function App() {
-    // ASR_HARD_STOP_ADD_ITEM_AUTOSCROLL: do not jump to editable quote text after Add Item.
+    // ASR_LOCK_VIEWPORT_DURING_ADD_ITEM: prevent mobile jump to editable quote text after Add Item.
     useEffect(() => {
-        let savedX = 0;
+        let locked = false;
         let savedY = 0;
-        let activeUntil = 0;
-        let timers = [];
+        let savedX = 0;
+        let unlockTimer = 0;
 
-        const getButton = (target) => target?.closest?.('button, input[type="submit"], [role="button"]');
-        const isAddItemButton = (target) => {
-            const button = getButton(target);
-            if (!button) return false;
-            const raw = [
-                button.textContent,
-                button.value,
-                button.getAttribute('aria-label'),
-                button.getAttribute('title')
+        const isAddItemControl = (target) => {
+            const el = target?.closest?.('button, input[type="submit"], [role="button"]');
+            if (!el) return false;
+            const txt = [
+                el.textContent,
+                el.value,
+                el.getAttribute('aria-label'),
+                el.getAttribute('title')
             ].filter(Boolean).join(' ').toLowerCase();
-            return raw.includes('add item') || raw.includes('add to summary') || raw.includes('add to quotation') || raw.includes('add estimate');
+            return txt.includes('add item') || txt.includes('add to summary') || txt.includes('add to quotation') || txt.includes('add estimate');
         };
 
-        const capture = () => {
-            savedX = window.scrollX || document.documentElement.scrollLeft || 0;
+        const lockViewport = () => {
+            if (locked) return;
             savedY = window.scrollY || document.documentElement.scrollTop || 0;
-            activeUntil = Date.now() + 1800;
-            document.documentElement.classList.add('asr-no-auto-scroll-now');
-            document.body.classList.add('asr-no-auto-scroll-now');
+            savedX = window.scrollX || document.documentElement.scrollLeft || 0;
+            locked = true;
             try { document.activeElement?.blur?.(); } catch {}
+            document.documentElement.classList.add('asr-add-locking');
+            document.body.classList.add('asr-add-locking');
+            document.body.style.position = 'fixed';
+            document.body.style.top = '-' + savedY + 'px';
+            document.body.style.left = '0';
+            document.body.style.right = '0';
+            document.body.style.width = '100%';
         };
 
-        const restore = () => {
-            if (!activeUntil || Date.now() > activeUntil) return;
-            try { window.scrollTo({ left: savedX, top: savedY, behavior: 'auto' }); } catch { try { window.scrollTo(savedX, savedY); } catch {} }
+        const unlockViewport = () => {
+            if (!locked) return;
+            locked = false;
+            document.body.style.position = '';
+            document.body.style.top = '';
+            document.body.style.left = '';
+            document.body.style.right = '';
+            document.body.style.width = '';
+            document.documentElement.classList.remove('asr-add-locking');
+            document.body.classList.remove('asr-add-locking');
+            try { window.scrollTo(savedX, savedY); } catch {}
         };
 
-        const scheduleRestore = () => {
-            timers.forEach(clearTimeout);
-            timers = [0, 20, 60, 120, 220, 400, 700, 1100, 1600].map((delay) => setTimeout(restore, delay));
-            setTimeout(() => {
-                if (Date.now() > activeUntil) {
-                    document.documentElement.classList.remove('asr-no-auto-scroll-now');
-                    document.body.classList.remove('asr-no-auto-scroll-now');
-                }
-            }, 1900);
+        const scheduleUnlock = () => {
+            clearTimeout(unlockTimer);
+            unlockTimer = setTimeout(unlockViewport, 650);
         };
 
-        const handlePointerDown = (event) => {
-            if (isAddItemButton(event.target)) capture();
+        const onPointerDown = (event) => {
+            if (isAddItemControl(event.target)) lockViewport();
         };
-
-        const handleClick = (event) => {
-            if (isAddItemButton(event.target)) {
-                capture();
-                scheduleRestore();
+        const onClick = (event) => {
+            if (isAddItemControl(event.target)) {
+                lockViewport();
+                scheduleUnlock();
+            }
+        };
+        const onSubmit = (event) => {
+            if (event.submitter && isAddItemControl(event.submitter)) {
+                lockViewport();
+                scheduleUnlock();
             }
         };
 
-        const handleSubmit = (event) => {
-            const submitter = event.submitter;
-            if (submitter && isAddItemButton(submitter)) {
-                capture();
-                scheduleRestore();
-            }
-        };
-
-        const observer = new MutationObserver(() => restore());
-        document.addEventListener('touchstart', handlePointerDown, true);
-        document.addEventListener('pointerdown', handlePointerDown, true);
-        document.addEventListener('mousedown', handlePointerDown, true);
-        document.addEventListener('click', handleClick, true);
-        document.addEventListener('submit', handleSubmit, true);
-        observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true });
-
+        document.addEventListener('touchstart', onPointerDown, true);
+        document.addEventListener('pointerdown', onPointerDown, true);
+        document.addEventListener('mousedown', onPointerDown, true);
+        document.addEventListener('click', onClick, true);
+        document.addEventListener('submit', onSubmit, true);
         return () => {
-            timers.forEach(clearTimeout);
-            observer.disconnect();
-            document.removeEventListener('touchstart', handlePointerDown, true);
-            document.removeEventListener('pointerdown', handlePointerDown, true);
-            document.removeEventListener('mousedown', handlePointerDown, true);
-            document.removeEventListener('click', handleClick, true);
-            document.removeEventListener('submit', handleSubmit, true);
-            document.documentElement.classList.remove('asr-no-auto-scroll-now');
-            document.body.classList.remove('asr-no-auto-scroll-now');
+            clearTimeout(unlockTimer);
+            unlockViewport();
+            document.removeEventListener('touchstart', onPointerDown, true);
+            document.removeEventListener('pointerdown', onPointerDown, true);
+            document.removeEventListener('mousedown', onPointerDown, true);
+            document.removeEventListener('click', onClick, true);
+            document.removeEventListener('submit', onSubmit, true);
         };
     }, []);
 
