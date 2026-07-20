@@ -8,7 +8,268 @@ function ago(v) { if (!v) return 'not updated'; const ms = Date.now() - new Date
 function delta(r) { const d = Number((num(r.daily_rate) - num(r.previous_daily_rate)).toFixed(2)); if (d > 0) return { cls: 'up', icon: <TrendingUp size={12} />, txt: `+${inr(d)}` }; if (d < 0) return { cls: 'down', icon: <TrendingDown size={12} />, txt: `-${inr(Math.abs(d))}` }; return { cls: 'flat', icon: <MinusCircle size={12} />, txt: 'No change' } }
 function Logo({ dark = false, loading = false }) { return <img src={dark ? '/asr-logo-white.png' : '/asr-logo.png'} alt="ASR Iron" className={`asr-logo ${loading ? 'asr-logo-loading' : ''}`} draggable="false" /> }
 export default function App() {
-    const [screen, setScreen] = useState('login'), [user, setUser] = useState(null), [fabricators, setFabricators] = useState([]), [submissions, setSubmissions] = useState([]), [items, setItems] = useState([]), [categories, setCategories] = useState([]), [rateItems, setRateItems] = useState([]), [loading, setLoading] = useState(true), [toast, setToast] = useState(''), [confirmBox, setConfirmBox] = useState(null), [sideOpen, setSideOpen] = useState(false);
+    // ASR_FORCE_VISIBLE_CLEAR_BUTTON_V4: force a visible delete-all button beside Reset, without MutationObserver loops.
+    const asrClearEveryQuoteState = () => {
+        try { if (typeof setQuoteItems === 'function') setQuoteItems([]); } catch {}
+        try { if (typeof setCalculatorCart === 'function') setCalculatorCart([]); } catch {}
+        try { if (typeof setCart === 'function') setCart([]); } catch {}
+        try { if (typeof setQuoteRows === 'function') setQuoteRows([]); } catch {}
+        try { if (typeof setProposalRows === 'function') setProposalRows([]); } catch {}
+        try { if (typeof setInvoiceRows === 'function') setInvoiceRows([]); } catch {}
+        try { if (typeof setEstimateItems === 'function') setEstimateItems([]); } catch {}
+        try { if (typeof setSummaryItems === 'function') setSummaryItems([]); } catch {}
+        try { if (typeof setLineItems === 'function') setLineItems([]); } catch {}
+        try { if (typeof setSelectedItems === 'function') setSelectedItems([]); } catch {}
+
+        try { if (typeof setQuoteText === 'function') setQuoteText(''); } catch {}
+        try { if (typeof setEditedQuoteText === 'function') setEditedQuoteText(''); } catch {}
+        try { if (typeof setQuoteManualText === 'function') setQuoteManualText(''); } catch {}
+        try { if (typeof setEditableQuoteText === 'function') setEditableQuoteText(''); } catch {}
+        try { if (typeof setShareText === 'function') setShareText(''); } catch {}
+        try { if (typeof setQuoteEdited === 'function') setQuoteEdited(false); } catch {}
+
+        // Also clear the actual textarea immediately for visual feedback.
+        document.querySelectorAll('textarea').forEach((ta) => {
+            const meta = [ta.className || '', ta.id || '', ta.name || '', ta.placeholder || '', ta.value || '', ta.parentElement?.textContent || ''].join(' ').toLowerCase();
+            if (meta.includes('quote') || meta.includes('quotation') || meta.includes('asr iron') || meta.includes('share')) {
+                ta.value = '';
+                ta.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+        });
+
+        try { if (typeof setToast === 'function') setToast('Quotation cleared.'); } catch {}
+    };
+
+    const asrConfirmClearEveryQuoteState = () => {
+        const message = 'Delete all added items?';
+        const run = () => asrClearEveryQuoteState();
+        try { if (typeof askDelete === 'function') return askDelete(message, run); } catch {}
+        try { if (typeof askConfirmation === 'function') return askConfirmation(message, run); } catch {}
+        try { if (typeof setConfirmBox === 'function') return setConfirmBox({ title: message, onYes: run }); } catch {}
+        try { if (typeof setConfirmModal === 'function') return setConfirmModal({ isOpen: true, message, onConfirm: run }); } catch {}
+        if (window.confirm('Are you sure you want to delete all the added items?')) run();
+    };
+
+    useEffect(() => {
+        let stopped = false;
+        const addButton = () => {
+            if (stopped || document.querySelector('.asr-force-clear-btn')) return;
+
+            const buttons = Array.from(document.querySelectorAll('button'));
+            // Prefer the Reset button, but fall back to the last share/action row button if needed.
+            let anchor = buttons.find((btn) => {
+                const text = (btn.textContent || '').toLowerCase().trim();
+                const title = (btn.getAttribute('title') || '').toLowerCase();
+                const label = (btn.getAttribute('aria-label') || '').toLowerCase();
+                return text.includes('reset') || title.includes('reset') || label.includes('reset');
+            });
+
+            if (!anchor) {
+                anchor = buttons.find((btn) => {
+                    const text = (btn.textContent || '').toLowerCase().trim();
+                    return text.includes('share') || text.includes('whatsapp') || text.includes('copy');
+                });
+            }
+            if (!anchor || !anchor.parentElement) return;
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'asr-force-clear-btn';
+            btn.title = 'Delete all added items';
+            btn.setAttribute('aria-label', 'Delete all added items');
+            btn.innerHTML = '<span aria-hidden="true">🗑</span>';
+            btn.addEventListener('click', asrConfirmClearEveryQuoteState);
+            anchor.insertAdjacentElement('afterend', btn);
+        };
+
+        addButton();
+        const timer = setInterval(addButton, 700);
+        return () => { stopped = true; clearInterval(timer); };
+    }, []);
+    // ASR_FORCE_VISIBLE_CLEAR_BUTTON_V4_END
+
+
+    function asrClearAllQuotesNow() {
+        try { if (typeof setQuoteItems === 'function') setQuoteItems([]); } catch {}
+        try { if (typeof setCalculatorCart === 'function') setCalculatorCart([]); } catch {}
+        try { if (typeof setCart === 'function') setCart([]); } catch {}
+        try { if (typeof setQuoteRows === 'function') setQuoteRows([]); } catch {}
+        try { if (typeof setProposalRows === 'function') setProposalRows([]); } catch {}
+        try { if (typeof setInvoiceRows === 'function') setInvoiceRows([]); } catch {}
+        try { if (typeof setEstimateItems === 'function') setEstimateItems([]); } catch {}
+        try { if (typeof setSummaryItems === 'function') setSummaryItems([]); } catch {}
+        try { if (typeof setLineItems === 'function') setLineItems([]); } catch {}
+        try { if (typeof setSelectedItems === 'function') setSelectedItems([]); } catch {}
+
+        try { if (typeof setQuoteText === 'function') setQuoteText(''); } catch {}
+        try { if (typeof setEditedQuoteText === 'function') setEditedQuoteText(''); } catch {}
+        try { if (typeof setQuoteManualText === 'function') setQuoteManualText(''); } catch {}
+        try { if (typeof setEditableQuoteText === 'function') setEditableQuoteText(''); } catch {}
+        try { if (typeof setShareText === 'function') setShareText(''); } catch {}
+        try { if (typeof setQuoteEdited === 'function') setQuoteEdited(false); } catch {}
+
+        try { if (typeof setToast === 'function') setToast('Quotation cleared.'); } catch {}
+    }
+
+    function asrAskClearAllQuotes() {
+        const message = 'Delete all added items?';
+        const run = () => asrClearAllQuotesNow();
+        try { if (typeof askDelete === 'function') return askDelete(message, run); } catch {}
+        try { if (typeof askConfirmation === 'function') return askConfirmation(message, run); } catch {}
+        try { if (typeof setConfirmBox === 'function') return setConfirmBox({ title: message, onYes: run }); } catch {}
+        try { if (typeof setConfirmModal === 'function') return setConfirmModal({ isOpen: true, message, onConfirm: run }); } catch {}
+        if (window.confirm('Are you sure you want to delete all the added items?')) run();
+    }
+
+
+// ASR_QUANTITY_ZERO_RUNTIME_FIX_V2: show quantity 0 as grey and let typing replace it directly.
+    useEffect(() => {
+        const isQuantityInput = (input) => {
+            if (!input || input.tagName !== 'INPUT') return false;
+            const meta = [
+                input.id || '',
+                input.name || '',
+                input.placeholder || '',
+                input.getAttribute('aria-label') || '',
+                input.parentElement?.textContent || '',
+                input.closest('label')?.textContent || '',
+                input.closest('.field')?.textContent || '',
+                input.closest('div')?.textContent || ''
+            ].join(' ').toLowerCase();
+            return meta.includes('quantity kg') || meta.includes('quantity load') || meta.includes('quantity') || meta.includes('qty');
+        };
+
+        const markInput = (input) => {
+            if (!isQuantityInput(input)) return;
+            input.setAttribute('placeholder', '0');
+            input.setAttribute('inputmode', 'decimal');
+
+            const syncClass = () => {
+                const value = String(input.value ?? '').trim();
+                if (value === '0' || value === '') input.classList.add('asr-quantity-zero-placeholder');
+                else input.classList.remove('asr-quantity-zero-placeholder');
+            };
+
+            if (!input.dataset.asrQtyZeroFixed) {
+                input.dataset.asrQtyZeroFixed = 'true';
+
+                input.addEventListener('focus', () => {
+                    if (String(input.value ?? '').trim() === '0') {
+                        setTimeout(() => input.select(), 0);
+                    }
+                    syncClass();
+                });
+
+                input.addEventListener('click', () => {
+                    if (String(input.value ?? '').trim() === '0') {
+                        setTimeout(() => input.select(), 0);
+                    }
+                    syncClass();
+                });
+
+                input.addEventListener('input', syncClass);
+                input.addEventListener('blur', syncClass);
+            }
+
+            syncClass();
+        };
+
+        const decorateQuantityInputs = () => {
+            document.querySelectorAll('input').forEach(markInput);
+        };
+
+        decorateQuantityInputs();
+        const timer = setTimeout(decorateQuantityInputs, 100);
+        const observer = new MutationObserver(() => setTimeout(decorateQuantityInputs, 0));
+        if (document.body) observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+        window.addEventListener('resize', decorateQuantityInputs);
+
+        return () => {
+            clearTimeout(timer);
+            observer.disconnect();
+            window.removeEventListener('resize', decorateQuantityInputs);
+        };
+    });
+
+
+    // ASR_FORCE_TEXTAREA_EXPAND_V4: force editable quote textarea to expand and keep bottom visible.
+    useEffect(() => {
+        let lastTextSnapshot = '';
+
+        const isEditableQuoteTextarea = (el) => {
+            if (!el || el.tagName !== 'TEXTAREA') return false;
+            const meta = [
+                el.className || '',
+                el.id || '',
+                el.name || '',
+                el.placeholder || '',
+                el.getAttribute('aria-label') || '',
+                el.parentElement?.textContent || ''
+            ].join(' ').toLowerCase();
+            return meta.includes('quote') || meta.includes('quotation') || meta.includes('share') || meta.includes('editable') || (el.value || '').includes('ASR Iron');
+        };
+
+        const resizeOne = (el, revealBottom = false) => {
+            if (!isEditableQuoteTextarea(el)) return;
+
+            const previousHeight = el.offsetHeight || 0;
+            el.style.setProperty('height', 'auto', 'important');
+            el.style.setProperty('overflow-y', 'hidden', 'important');
+            el.style.setProperty('max-height', 'none', 'important');
+            el.style.setProperty('resize', 'none', 'important');
+
+            const nextHeight = Math.max(el.scrollHeight + 18, 190);
+            el.style.setProperty('height', String(nextHeight) + 'px', 'important');
+
+            const textChanged = (el.value || '') !== lastTextSnapshot;
+            const grew = nextHeight > previousHeight + 6;
+            if (textChanged) lastTextSnapshot = el.value || '';
+
+            if ((revealBottom || textChanged || grew) && document.activeElement !== el) {
+                requestAnimationFrame(() => {
+                    try {
+                        const rect = el.getBoundingClientRect();
+                        const bottomSpace = window.innerHeight - rect.bottom;
+                        if (bottomSpace < 95) {
+                            window.scrollBy({ top: 120 - bottomSpace, behavior: 'smooth' });
+                        }
+                    } catch {}
+                });
+            }
+        };
+
+        const resizeAll = (revealBottom = false) => {
+            document.querySelectorAll('textarea').forEach(el => resizeOne(el, revealBottom));
+        };
+
+        const onInput = (event) => {
+            if (event.target && event.target.tagName === 'TEXTAREA') resizeOne(event.target, true);
+        };
+
+        resizeAll(false);
+        requestAnimationFrame(() => resizeAll(true));
+        const timer1 = setTimeout(() => resizeAll(true), 60);
+        const timer2 = setTimeout(() => resizeAll(true), 250);
+
+        const observer = new MutationObserver(() => {
+            requestAnimationFrame(() => resizeAll(true));
+        });
+        if (document.body) observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+
+        document.addEventListener('input', onInput, true);
+        window.addEventListener('resize', resizeAll);
+
+        return () => {
+            clearTimeout(timer1);
+            clearTimeout(timer2);
+            observer.disconnect();
+            document.removeEventListener('input', onInput, true);
+            window.removeEventListener('resize', resizeAll);
+        };
+    });
+
+
+const [screen, setScreen] = useState('login'), [user, setUser] = useState(null), [fabricators, setFabricators] = useState([]), [submissions, setSubmissions] = useState([]), [items, setItems] = useState([]), [categories, setCategories] = useState([]), [rateItems, setRateItems] = useState([]), [loading, setLoading] = useState(true), [toast, setToast] = useState(''), [confirmBox, setConfirmBox] = useState(null), [sideOpen, setSideOpen] = useState(false);
     // 2) Add this state inside App():
     const [pushPermission, setPushPermission] = useState(getPushPermission());
 
@@ -176,7 +437,16 @@ const notificationKey = n =>
         </label>
     }
 
-    function marketPage() { return <div className="grid"><div className="area"><h2 className="section-title"><BarChart3 size={20} /> Daily Market Rates</h2><p className="section-note">Increment/decrement compares current value with previous saved update and remains after refresh.</p><input className="input search-box" placeholder="Search market category..." value={marketSearch} onChange={e => setMarketSearch(e.target.value)} /><form className="small-card" onSubmit={addMarket}><h3>Add New Market Item</h3><div className="grid grid-3"><input className="input" placeholder="Name" value={newSegment.name} onChange={e => setNewSegment({ ...newSegment, name: e.target.value })} /><input className="input" type="number" placeholder="Sizes" value={newSegment.rate} onChange={e => setNewSegment({ ...newSegment, rate: e.target.value })} /><input className="input" type="number" placeholder="Freight" value={newSegment.freight} onChange={e => setNewSegment({ ...newSegment, freight: e.target.value })} /></div><button className="btn btn-primary full">Add to Market</button></form></div><div className="market-grid">{marketCategories.map(row => { const d = delta(row); return <div className="market-card" key={row.id}><div className="market-card-head"><div><div className="rate-name">{row.name}</div>{dailyRateItemTopToggle(row)}<div className="rate-value">{inr(row.daily_rate)}</div><div className={`rate-change ${d.cls}`}>{d.icon}{d.txt}</div><div className="rate-time">Last updated {ago(row.updated_at || row.created_at)}</div></div><button className="market-delete-btn" onClick={() => deleteSegment(row)}><Trash2 size={16} /></button></div><div className="market-update-grid"><div className="field"><label className="label">New Sizes</label><input className="input" type="number" defaultValue={row.daily_rate} onBlur={e => updateMarketRate(row, e.target.value, row.freight)} /></div><div className="field"><label className="label">Freight</label><input className="input" type="number" defaultValue={row.freight} onBlur={e => updateMarketRate(row, row.daily_rate, e.target.value)} /></div></div></div> })}</div></div> }
+    function marketPage() { return <div className="grid"><div className="area"><h2 className="section-title"><BarChart3 size={20} /> Daily Market Rates</h2><p className="section-note">Increment/decrement compares current value with previous saved update and remains after refresh.</p><input className="input search-box" placeholder="Search market category..." value={marketSearch} onChange={e => setMarketSearch(e.target.value)} /><form className="small-card" onSubmit={addMarket}><h3>Add New Market Item</h3><div className="grid grid-3"><input className="input" placeholder="Name" value={newSegment.name} onChange={e => setNewSegment({ ...newSegment, name: e.target.value })} /><input className="input" type="number" placeholder="Sizes" value={newSegment.rate} onChange={e => setNewSegment({ ...newSegment, rate: e.target.value })} /><input className="input" type="number" placeholder="Freight" value={newSegment.freight} onChange={e => setNewSegment({ ...newSegment, freight: e.target.value })} /></div><button className="btn btn-primary full">Add to Market</button>
+                                <button
+                                    type="button"
+                                    className="asr-clear-all-quote-jsx-btn"
+                                    title="Delete all added items"
+                                    aria-label="Delete all added items"
+                                    onClick={asrAskClearAllQuotes}
+                                >
+                                    🗑
+                                </button></form></div><div className="market-grid">{marketCategories.map(row => { const d = delta(row); return <div className="market-card" key={row.id}><div className="market-card-head"><div><div className="rate-name">{row.name}</div>{dailyRateItemTopToggle(row)}<div className="rate-value">{inr(row.daily_rate)}</div><div className={`rate-change ${d.cls}`}>{d.icon}{d.txt}</div><div className="rate-time">Last updated {ago(row.updated_at || row.created_at)}</div></div><button className="market-delete-btn" onClick={() => deleteSegment(row)}><Trash2 size={16} /></button></div><div className="market-update-grid"><div className="field"><label className="label">New Sizes</label><input className="input" type="number" defaultValue={row.daily_rate} onBlur={e => updateMarketRate(row, e.target.value, row.freight)} /></div><div className="field"><label className="label">Freight</label><input className="input" type="number" defaultValue={row.freight} onBlur={e => updateMarketRate(row, row.daily_rate, e.target.value)} /></div></div></div> })}</div></div> }
     function dailyPage() { return <div className="area"><h2 className="section-title">Sizes Configuration</h2><div className="field"><label className="label">Select Segment</label><select value={categoryId} onChange={e => { setCategoryId(e.target.value); setSizeSearch('') }}>{sortedCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div><input className="input search-box" placeholder="Search size/name..." value={sizeSearch} onChange={e => setSizeSearch(e.target.value)} /><form className="small-card" onSubmit={addSize}><div className="grid grid-3"><input className="input" value={newSizeName} onChange={e => setNewSizeName(e.target.value)} placeholder="Size name" /><input className="input" type="number" value={newSizeDiff} onChange={e => setNewSizeDiff(e.target.value)} placeholder="Diff" /><button className="btn btn-primary">Add Size</button></div></form><div className="size-card-list">{visibleSizes.map(s => <div className="size-edit-card" key={s.id}><div className="size-edit-main"><input className="input size-name-input" defaultValue={s.name} onBlur={e => updateSizeName(s, e.target.value)} /><div className="size-preview">Preview: <b>{inr(unitRate(s.category_id, s.fixed_difference))}/kg</b></div></div><div className="size-edit-side"><input className="input diff-input" type="number" defaultValue={s.fixed_difference} onBlur={e => updateDiff(s, e.target.value)} /><button className="size-delete-btn" onClick={() => deleteSize(s)}><Trash2 size={16} /></button></div></div>)}</div></div> }
 
     function getCurrentQuoteText() {
