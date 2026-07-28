@@ -33,11 +33,36 @@ import {
   getPushPermission,
 } from "./pushNotifications";
 
+// ASR_SORTING_ONLY_SAFE: natural numeric sorting for Sizes and Calculator size dropdowns.
+function asrNaturalSizeCompare(a, b) {
+  const get = (item) => String(item?.name ?? item ?? '').trim().toLowerCase();
+  const ax = get(a);
+  const bx = get(b);
+
+  const aStartsNumber = /^\s*\d/.test(ax);
+  const bStartsNumber = /^\s*\d/.test(bx);
+  if (aStartsNumber && !bStartsNumber) return -1;
+  if (!aStartsNumber && bStartsNumber) return 1;
+
+  const nums = (value) => (value.match(/\d+(?:\.\d+)?/g) || []).map(Number);
+  const an = nums(ax);
+  const bn = nums(bx);
+  const max = Math.max(an.length, bn.length);
+
+  for (let i = 0; i < max; i += 1) {
+    if (an[i] == null && bn[i] != null) return -1;
+    if (an[i] != null && bn[i] == null) return 1;
+    if (an[i] !== bn[i]) return an[i] - bn[i];
+  }
+
+  return ax.localeCompare(bx, undefined, { numeric: true, sensitivity: 'base' });
+}
+
 function asrSortSizes(list) {
   return [...(list || [])].sort((a, b) => asrNaturalSizeCompare(a, b));
 }
 
-
+// ASR_SAFE_NATURAL_SIZE_SORT: natural number-aware order for size/spec options.
 // ASR_NATURAL_NUMERIC_SIZE_SORT: Sort size/spec names by numeric chunks first, then text.
 const num = (v) => Number(v || 0),
   round05 = (v) => Math.round(num(v) * 20) / 20,
@@ -81,7 +106,7 @@ function Logo({ dark = false, loading = false }) {
   );
 }
 export default function App() {
-  // ASR_MOBILE_ADD_ITEM_SCROLL_FINAL_FIX: prevent mobile jump after Add Item by locking viewport and blocking textarea focus during the update.
+// ASR_MOBILE_ADD_ITEM_SCROLL_FINAL_FIX: prevent mobile jump after Add Item by locking viewport and blocking textarea focus during the update.
   useEffect(() => {
     let lockActive = false;
     let savedX = 0;
@@ -722,22 +747,13 @@ export default function App() {
     [sortedCategories, marketSearch],
   );
   const visibleSizes = useMemo(() => {
-    let rows = rateItems.filter((x) => x.category_id === categoryId);
-    const c = categories.find((x) => x.id === categoryId);
-    //if (c?.name?.toLowerCase() === "pipe") rows = [...rows].reverse();
-    //else
-      rows = [...rows].sort((a, b) =>
-        String(a.name).localeCompare(String(b.name), undefined, {
-          numeric: true,
-          sensitivity: "base",
-        }),
-      );
+    let rows = asrSortSizes(rateItems.filter((x) => x.category_id === categoryId));
     if (sizeSearch)
       rows = rows.filter((x) =>
         String(x.name).toLowerCase().includes(sizeSearch.toLowerCase()),
       );
     return rows;
-  }, [rateItems, categoryId, categories, sizeSearch]);
+  }, [rateItems, categoryId, sizeSearch]);
   const activeFabricator = useMemo(
     () => fabricators.find((f) => f.id === user?.id) || user,
     [fabricators, user],
@@ -1758,7 +1774,7 @@ export default function App() {
   }
 
   function calculatorPage() {
-    const activeSizes = rateItems.filter((x) => x.category_id === categoryId),
+    const activeSizes = asrSortSizes(rateItems.filter((x) => x.category_id === categoryId)),
       total = cart.reduce((s, i) => s + i.total, 0);
     return (
       <div className="grid grid-5">
@@ -2865,7 +2881,6 @@ export default function App() {
         </div>
       )}
       {confirmDialog()}
-      {alertEnablePopup()}
       {alertEnablePopup()}
       {screen === "login" && loginPage()}
       {screen === "signup" && signupPage()}
