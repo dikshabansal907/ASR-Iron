@@ -24,6 +24,7 @@ Menu,
   Clock,
   Bell,
   Megaphone,
+  Search,
 } from "lucide-react";
 import { supabase } from "./lib/supabaseClient";
 import {
@@ -188,20 +189,31 @@ export default function App() {
       document.body.style.setProperty("overflow", "hidden", "important");
     };
 
-    const unlock = () => {
-      if (!lockActive) return;
-      lockActive = false;
-      if (originalTextareaFocus && window.HTMLTextAreaElement?.prototype) {
-        window.HTMLTextAreaElement.prototype.focus = originalTextareaFocus;
-      }
+    const forceUnlockScroll = () => {
       document.documentElement.style.overflow = "";
       document.body.style.overflow = "";
       document.documentElement.classList.remove("asr-add-item-lock");
       document.body.classList.remove("asr-add-item-lock");
+    };
+
+    const unlock = () => {
+      lockActive = false;
+      if (originalTextareaFocus && window.HTMLTextAreaElement?.prototype) {
+        window.HTMLTextAreaElement.prototype.focus = originalTextareaFocus;
+      }
+      forceUnlockScroll();
       try {
         window.scrollTo(savedX, savedY);
       } catch {}
     };
+
+    // Safety net: if the tab is hidden/shown while locked, force-unlock so scrolling never stays broken.
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible" && !lockActive) {
+        forceUnlockScroll();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     const schedule = () => {
       restoreTimers.forEach(clearTimeout);
@@ -237,6 +249,7 @@ export default function App() {
       restoreTimers.forEach(clearTimeout);
       clearTimeout(unlockTimer);
       unlock();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       document.removeEventListener("touchstart", beforeAction, true);
       document.removeEventListener("pointerdown", beforeAction, true);
       document.removeEventListener("mousedown", beforeAction, true);
@@ -547,7 +560,6 @@ export default function App() {
       observer.observe(document.body, {
         childList: true,
         subtree: true,
-        characterData: true,
       });
     window.addEventListener("resize", decorateQuantityInputs);
 
@@ -556,7 +568,7 @@ export default function App() {
       observer.disconnect();
       window.removeEventListener("resize", decorateQuantityInputs);
     };
-  });
+  }, []);
 
   // ASR_FORCE_TEXTAREA_EXPAND_V4: force editable quote textarea to expand and keep bottom visible.
   useEffect(() => {
@@ -650,7 +662,7 @@ export default function App() {
       document.removeEventListener("input", onInput, true);
       window.removeEventListener("resize", resizeAll);
     };
-  });
+  }, []);
 
   const [screen, setScreen] = useState("login"),
     [user, setUser] = useState(null),
@@ -687,10 +699,19 @@ export default function App() {
     [fabTab, setFabTab] = useState("apply"),
     [categoryId, setCategoryId] = useState(""),
     [sizeId, setSizeId] = useState(""),
-    [qty, setQty] = useState("0"),
+    [qty, setQty] = useState(""),
+    [margin, setMargin] = useState(() => {
+    try {
+      return localStorage.getItem('asr_calculator_margin') ?? '';
+    } catch {
+      return '';
+    }
+  }),
     [cart, setCart] = useState([]),
     [quoteText, setQuoteText] = useState(""),
     [quoteEdited, setQuoteEdited] = useState(false);
+  const [sizePickerOpen, setSizePickerOpen] = useState(false),
+    [sizePickerQuery, setSizePickerQuery] = useState("");
   const [newSegment, setNewSegment] = useState({
       name: "",
       rate: "",
@@ -1196,13 +1217,18 @@ export default function App() {
   }
   function addCalc(e) {
     e.preventDefault();
-    if (!categoryId || !sizeId || qty === "" || Number(qty) < 0) return;
+    if (!categoryId || !sizeId || Number(qty || 0) < 0) return;
     const s = rateItems.find((x) => x.id === sizeId),
       c = getCategory(categoryId);
     if (!s || !c) return;
-    const u = unitRate(categoryId, s.fixed_difference),
-      q = Number(qty),
-      total = q === 0 ? u : round05(u * q);
+
+    const baseUnitRate = unitRate(categoryId, s.fixed_difference),
+      marginValue = num(margin),
+      marginWithGst = round05(marginValue * 1.18),
+      finalUnitRate = round05(baseUnitRate + marginWithGst),
+      q = Number(qty || 0),
+      total = q === 0 ? finalUnitRate : round05(finalUnitRate * q);
+
     setCart([
       ...cart,
       {
@@ -1210,13 +1236,17 @@ export default function App() {
         category: c.name,
         itemName: s.name,
         qty: q,
-        unitRate: u,
+        baseUnitRate,
+        margin: marginValue,
+        marginWithGst,
+        unitRate: finalUnitRate,
         total,
       },
     ]);
     setQuoteEdited(false);
     setSizeId("");
-    setQty("0");
+    setQty("");
+    
   }
   function deleteQuoteRow(item) {
     askDelete(`Delete ${item.itemName}?`, () => {
@@ -1569,7 +1599,7 @@ export default function App() {
         <h2 className="section-title">Sizes Configuration</h2>
         <div className="field">
           <label className="label">Select Segment</label>
-          <select
+          <select data-asr-size-select="1"
             value={categoryId}
             onChange={(e) => {
               setCategoryId(e.target.value);
@@ -1775,6 +1805,9 @@ export default function App() {
 
   function calculatorPage() {
     const activeSizes = asrSortSizes(rateItems.filter((x) => x.category_id === categoryId)),
+      sizePickerRows = activeSizes.filter((s) =>
+        String(s.name || "").toLowerCase().includes(sizePickerQuery.trim().toLowerCase()),
+      ),
       total = cart.reduce((s, i) => s + i.total, 0);
     return (
       <div className="grid grid-5">
@@ -1790,7 +1823,9 @@ export default function App() {
                 onChange={(e) => {
                   setCategoryId(e.target.value);
                   setSizeId("");
-                  setQty("0");
+                  setQty("");
+                  setSizePickerOpen(false);
+                  setSizePickerQuery("");
                 }}
                 required
               >
@@ -1803,45 +1838,134 @@ export default function App() {
               </select>
             </div>
             {categoryId && (
-              <div className="field">
+              <div className="field asr-size-picker-field">
                 <label className="label">Step 2: Choose Size</label>
-                <select
-                  value={sizeId}
-                  onChange={(e) => {
-                    setSizeId(e.target.value);
-                    setQty("0");
-                  }}
-                  required
-                >
-                  <option value="">-- Select Size --</option>
-                  {activeSizes.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} (Diff: ₹{s.fixed_difference})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            {categoryId && sizeId && (
-              <div className="small-card">
-                <div className="field">
-                  <label className="label">Quantity kg</label>
-                  <input
-                    className="input"
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={qty}
-                    onChange={(e) => setQty(e.target.value)}
+                <div className="asr-size-picker-row">
+                  <select
+                    value={sizeId}
+                    onChange={(e) => {
+                      setSizeId(e.target.value);
+                      setQty("");
+                      setSizePickerOpen(false);
+                      setSizePickerQuery("");
+                    }}
                     required
-                  />
+                  >
+                    <option value="">-- Select Size --</option>
+                    {activeSizes.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} (Diff: ₹{s.fixed_difference})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    className="asr-size-picker-search-btn"
+                    aria-label="Search size"
+                    title="Search size"
+                    onClick={() => {
+                      setSizePickerOpen((open) => !open);
+                      setSizePickerQuery("");
+                    }}
+                  >
+                    <Search size={19} strokeWidth={2} aria-hidden="true" />
+                  </button>
                 </div>
+                {sizePickerOpen && (
+<div className="asr-size-picker-popover">
+  <div className="asr-size-picker-head">
+    <div className="asr-size-picker-title">Search Size</div>
+
+    <button
+      type="button"
+      className="asr-size-picker-close"
+      aria-label="Close size search"
+      title="Close"
+      onClick={() => {
+        setSizePickerOpen(false);
+        setSizePickerQuery("");
+      }}
+    >
+      ×
+    </button>
+  </div>
+
+  <input
+    className="asr-size-picker-input"
+    autoFocus
+    placeholder="Type to search size..."
+    value={sizePickerQuery}
+    onChange={(e) => setSizePickerQuery(e.target.value)}
+  />
+                    <div className="asr-size-picker-list">
+                      {sizePickerRows.length === 0 ? (
+                        <div className="asr-size-picker-empty">No matching size</div>
+                      ) : (
+                        sizePickerRows.map((s) => (
+                          <button
+                            type="button"
+                            key={s.id}
+                            className="asr-size-picker-option"
+                            onClick={() => {
+                              setSizeId(s.id);
+                              setQty("");
+                              setSizePickerOpen(false);
+                              setSizePickerQuery("");
+                            }}
+                          >
+                            <span>{s.name}</span>
+                            <small>Diff: ₹{s.fixed_difference}</small>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
+<div className="small-card quantity-margin-card">
+  <div className="quantity-margin-grid">
+    <div className="field">
+      <label className="label">Step 3: Quantity kg</label>
+
+      <input
+        className="input quantity-input"
+        type="number"
+        inputMode="decimal"
+        min="0"
+        step="0.1"
+        value={qty}
+        placeholder="0"
+        onChange={(e) => setQty(e.target.value)}
+      />
+    </div>
+
+    <div className="field">
+      <label className="label">Margin ₹/kg</label>
+
+      <input
+        className="input margin-input"
+        type="number"
+        inputMode="decimal"
+        step="0.01"
+        value={margin}
+        placeholder="0"
+        onChange={(e) => {
+        const nextMargin = e.target.value;
+        setMargin(nextMargin);
+        try {
+          localStorage.setItem('asr_calculator_margin', nextMargin);
+        } catch (error) {
+          console.warn('Could not save calculator margin on this device.', error);
+        }
+      }}
+      />
+    </div>
+  </div>
+</div>
             <button
               className="btn btn-primary full"
-              disabled={!categoryId || !sizeId || qty === "" || Number(qty) < 0}
-            >
+              disabled={!categoryId || !sizeId || Number(qty || 0) < 0}            >
               Add Item
             </button>
           </form>
