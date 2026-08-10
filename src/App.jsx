@@ -190,8 +190,8 @@ export default function App() {
     };
 
     const forceUnlockScroll = () => {
-      document.documentElement.style.overflow = "";
-      document.body.style.overflow = "";
+      document.documentElement.style.removeProperty("overflow");
+      document.body.style.removeProperty("overflow");
       document.documentElement.classList.remove("asr-add-item-lock");
       document.body.classList.remove("asr-add-item-lock");
     };
