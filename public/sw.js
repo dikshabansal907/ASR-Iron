@@ -1,3 +1,8 @@
+
+// ASR notification artwork
+const ASR_NOTIFICATION_ICON = '/icons/icon-192.png';
+const ASR_NOTIFICATION_BADGE = '/icons/asr-notification-badge.png';
+
 const CACHE_NAME = 'asr-iron-pwa-v5';
 const ASSETS = ['/', '/index.html', '/manifest.webmanifest', '/asr-logo.png', '/asr-logo-white.png', '/icons/icon-192.png'];
 
@@ -23,6 +28,8 @@ self.addEventListener('push', (event) => {
 
   const title = data.title || 'ASR Iron';
   const options = {
+    icon: ASR_NOTIFICATION_ICON,
+    badge: ASR_NOTIFICATION_BADGE,
     body: data.body || data.message || 'New ASR Iron notification',
     icon: data.icon || '/icons/icon-192.png',
     badge: data.badge || '/icons/icon-192.png',
