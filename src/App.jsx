@@ -1161,6 +1161,56 @@ export default function App() {
     setToast("Redemption request rejected.");
   }
 
+  /* ASR_EDIT_CATEGORY_NAME_START */
+  async function updateCategoryName(row, nextValue) {
+    const nextName = String(nextValue || '').trim();
+    const currentName = String(row?.name || '').trim();
+
+    if (!nextName) {
+      setToast('Category name cannot be empty.');
+      return false;
+    }
+
+    if (nextName === currentName) return true;
+
+    const duplicate = categories.some(
+      (category) =>
+        category.id !== row.id &&
+        String(category.name || '').trim().toLowerCase() === nextName.toLowerCase(),
+    );
+
+    if (duplicate) {
+      setToast('A category with this name already exists.');
+      return false;
+    }
+
+    const { error } = await supabase
+      .from('rate_categories')
+      .update({ name: nextName })
+      .eq('id', row.id);
+
+    if (error) {
+      setToast(error.message || 'Could not update category name.');
+      return false;
+    }
+
+    setCategories((prev) =>
+      prev.map((category) =>
+        category.id === row.id ? { ...category, name: nextName } : category,
+      ),
+    );
+
+    setCart((prev) =>
+      prev.map((item) =>
+        item.category === currentName ? { ...item, category: nextName } : item,
+      ),
+    );
+
+    setToast('Category name updated.');
+    return true;
+  }
+  /* ASR_EDIT_CATEGORY_NAME_END */
+
   async function updateMarketRate(row, newRate, newFreight = row.freight) {
     const patch = {
       previous_daily_rate: num(row.daily_rate),
@@ -1581,7 +1631,7 @@ export default function App() {
                 }
               />
             </div>
-            <button className="btn btn-primary full">Add to Market</button>
+            <button className="btn btn-primary full" style={{ marginTop: "12px" }}>Add to Market</button>
             <button
               type="button"
               className="asr-clear-all-quote-jsx-btn"
@@ -1599,9 +1649,23 @@ export default function App() {
             return (
               <div className="market-card" key={row.id}>
                 <div className="market-card-head">
-                  <div>
-                    <div className="rate-name">{row.name}</div>
-                    {dailyRateItemTopToggle(row)}
+                  <div className="market-card-content">
+                    <input
+                      className="market-category-name-input"
+                      defaultValue={row.name}
+                      aria-label={`Edit ${row.name} category name`}
+                      title="Edit category name"
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter') {
+                          event.preventDefault();
+                          event.currentTarget.blur();
+                        }
+                      }}
+                      onBlur={async (event) => {
+                        const saved = await updateCategoryName(row, event.target.value);
+                        if (!saved) event.target.value = row.name;
+                      }}
+                    />
                     <div className="rate-value">{inr(row.daily_rate)}</div>
                     <div className={`rate-change ${d.cls}`}>
                       {d.icon}
@@ -1611,12 +1675,17 @@ export default function App() {
                       Last updated {ago(row.updated_at || row.created_at)}
                     </div>
                   </div>
-                  <button
-                    className="market-delete-btn"
-                    onClick={() => deleteSegment(row)}
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  <div className="market-card-actions">
+                    {dailyRateItemTopToggle(row)}
+                    <button
+                      className="market-delete-btn"
+                      onClick={() => deleteSegment(row)}
+                      aria-label={`Delete ${row.name} category`}
+                      title="Delete category"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
                 <div className="market-update-grid">
                   <div className="field">

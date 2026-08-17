@@ -5081,3 +5081,163 @@ button.fabricator-alert-status-icon.off .fabricator-alert-status-dot {
   }
 }
 /* ASR_TRUE_CIRCULAR_STATUS_SEALS_END */
+
+/* ASR_EDIT_CATEGORY_MOVE_TOP_CSS_START */
+.market-card-head {
+  align-items: flex-start !important;
+  gap: 12px;
+}
+
+.market-card-content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.market-category-name-input {
+  width: min(100%, 240px);
+  min-height: 34px;
+  margin: 0 0 8px;
+  padding: 6px 9px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: #0f172a;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 950;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  outline: none;
+  transition: border-color 0.16s ease, background-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.market-category-name-input:hover {
+  border-color: #dbe4ef;
+  background: #f8fbff;
+}
+
+.market-category-name-input:focus {
+  border-color: #93b8df;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(10, 62, 122, 0.08);
+}
+
+.market-card-actions {
+  flex: 0 0 auto;
+  min-width: 66px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.market-card-actions .market-card-top-toggle {
+  position: static !important;
+  margin: 0 !important;
+  align-self: flex-end;
+}
+
+.market-card-actions .market-delete-btn {
+  position: static !important;
+  margin: 0 !important;
+}
+
+@media (max-width: 720px) {
+  .market-category-name-input {
+    width: 100%;
+    max-width: 220px;
+    font-size: 12px;
+  }
+
+  .market-card-actions {
+    min-width: 62px;
+    gap: 10px;
+  }
+}
+/* ASR_EDIT_CATEGORY_MOVE_TOP_CSS_END */
+
+/* ASR_CATEGORY_NAME_FIELD_STYLE_START */
+/* Editable Daily Rate category name field */
+.market-category-name-input {
+  display: block !important;
+  width: 100% !important;
+  max-width: 245px !important;
+  min-height: 40px !important;
+  margin: 0 0 12px !important;
+  padding: 9px 12px !important;
+
+  border: 1px solid #d7e1ee !important;
+  border-radius: 12px !important;
+  background: #f8fbff !important;
+  color: #0f172a !important;
+
+  font-family: inherit !important;
+  font-size: 13px !important;
+  font-weight: 950 !important;
+  line-height: 1.2 !important;
+  letter-spacing: 0.025em !important;
+  text-transform: uppercase !important;
+
+  outline: none !important;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.025) !important;
+  transition:
+    border-color 0.16s ease,
+    background-color 0.16s ease,
+    box-shadow 0.16s ease !important;
+}
+
+.market-category-name-input:hover {
+  border-color: #b8cbe0 !important;
+  background: #ffffff !important;
+}
+
+.market-category-name-input:focus {
+  border-color: #0a3e7a !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(10, 62, 122, 0.1) !important;
+}
+
+.market-card-head {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: start !important;
+  column-gap: 12px !important;
+}
+
+.market-card-content {
+  min-width: 0 !important;
+}
+
+.market-card-actions {
+  min-width: 64px !important;
+  padding-top: 2px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  gap: 12px !important;
+}
+
+.market-card-actions .market-card-top-toggle,
+.market-card-actions .market-delete-btn {
+  position: static !important;
+  margin: 0 !important;
+}
+
+@media (max-width: 720px) {
+  .market-category-name-input {
+    max-width: none !important;
+    min-height: 38px !important;
+    padding: 8px 10px !important;
+    font-size: 12px !important;
+  }
+
+  .market-card-head {
+    column-gap: 10px !important;
+  }
+
+  .market-card-actions {
+    min-width: 62px !important;
+    gap: 10px !important;
+  }
+}
+/* ASR_CATEGORY_NAME_FIELD_STYLE_END */
