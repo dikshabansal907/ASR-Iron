@@ -3844,3 +3844,1240 @@ select.asr-calculator-size-select-icon-only {
 }
 .asr-size-picker-search-btn:active { transform: scale(.96) !important; }
 /* ASR_LUCIDE_SEARCH_ICON_V2_END */
+
+/* ASR_SCROLL_UNLOCK_CSS_START */
+html,
+body,
+#root {
+  position: static !important;
+  top: auto !important;
+  width: auto !important;
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+html.asr-add-item-lock,
+body.asr-add-item-lock {
+  position: static !important;
+  top: auto !important;
+  width: auto !important;
+  overflow-y: auto !important;
+}
+/* ASR_SCROLL_UNLOCK_CSS_END */
+
+/* ASR_FABRICATOR_POINTS_CARD_UI_START */
+/* Fabricator approved-points card: centered outlined balance */
+.fabricator-points-card,
+.approved-points-card,
+.points-card,
+.blue-points-card,
+.fabricator-score-card {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  min-height: 178px !important;
+  padding: 22px 18px !important;
+  gap: 14px !important;
+}
+
+.fabricator-points-card .label,
+.approved-points-card .label,
+.points-card .label,
+.blue-points-card .label,
+.fabricator-score-card .label,
+.points-card-title,
+.approved-points-label {
+  width: 100% !important;
+  margin: 0 !important;
+  text-align: center !important;
+}
+
+/* Remove the yellow fill and keep only a premium gold outline. */
+.points-gold-box,
+.approved-points-value,
+.points-balance-box,
+.points-value-box,
+.fabricator-points-value {
+  align-self: center !important;
+  display: inline-flex !important;
+  align-items: baseline !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  min-width: 132px !important;
+  margin: 0 auto !important;
+  padding: 12px 22px !important;
+  border: 2px solid #f5b82e !important;
+  border-radius: 18px !important;
+  background: transparent !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05), 0 8px 20px rgba(2, 18, 47, 0.16) !important;
+  text-align: center !important;
+}
+
+.points-gold-box strong,
+.approved-points-value strong,
+.points-balance-box strong,
+.points-value-box strong,
+.fabricator-points-value strong {
+  color: #ffffff !important;
+  font-size: clamp(34px, 9vw, 46px) !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+  letter-spacing: -0.03em !important;
+}
+
+.points-gold-box em,
+.points-gold-box span,
+.approved-points-value em,
+.approved-points-value span,
+.points-balance-box em,
+.points-balance-box span,
+.points-value-box em,
+.points-value-box span,
+.fabricator-points-value em,
+.fabricator-points-value span {
+  color: #f7c84b !important;
+  font-size: 13px !important;
+  font-style: normal !important;
+  font-weight: 900 !important;
+}
+
+/* Hide any legacy workshop cell that remains in the old markup. */
+.registered-workshop,
+.points-workshop,
+.workshop-cell,
+.workshop-info,
+.registered-workshop-cell {
+  display: none !important;
+}
+
+@media (max-width: 720px) {
+  .fabricator-points-card,
+  .approved-points-card,
+  .points-card,
+  .blue-points-card,
+  .fabricator-score-card {
+    min-height: 162px !important;
+    padding: 18px 14px !important;
+    gap: 12px !important;
+  }
+
+  .points-gold-box,
+  .approved-points-value,
+  .points-balance-box,
+  .points-value-box,
+  .fabricator-points-value {
+    min-width: 122px !important;
+    padding: 11px 18px !important;
+    border-radius: 16px !important;
+  }
+}
+/* ASR_FABRICATOR_POINTS_CARD_UI_END */
+
+/* ASR_FABRICATOR_POINTS_CARD_SAFE_UI_START */
+/* Safe CSS-only Fabricator points-card polish */
+.points-card,
+.fabricator-points-card,
+.approved-points-card,
+.blue-points-card,
+.fabricator-score-card {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  min-height: 174px !important;
+  padding: 20px 16px !important;
+  gap: 13px !important;
+}
+
+.points-card > *,
+.fabricator-points-card > *,
+.approved-points-card > *,
+.blue-points-card > *,
+.fabricator-score-card > * {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.points-card-title,
+.approved-points-label,
+.points-card .label,
+.fabricator-points-card .label,
+.approved-points-card .label {
+  width: 100% !important;
+  text-align: center !important;
+  margin: 0 !important;
+}
+
+.points-gold-box,
+.approved-points-value,
+.points-balance-box,
+.points-value-box,
+.fabricator-points-value {
+  display: inline-flex !important;
+  align-items: baseline !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  min-width: 132px !important;
+  margin: 0 auto !important;
+  padding: 12px 22px !important;
+  border: 2px solid #f5b82e !important;
+  border-radius: 18px !important;
+  background: transparent !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 20px rgba(2, 18, 47, 0.14) !important;
+}
+
+.points-gold-box strong,
+.approved-points-value strong,
+.points-balance-box strong,
+.points-value-box strong,
+.fabricator-points-value strong {
+  color: #ffffff !important;
+  font-size: clamp(34px, 9vw, 46px) !important;
+  line-height: 1 !important;
+  font-weight: 950 !important;
+}
+
+.points-gold-box em,
+.points-gold-box span,
+.approved-points-value em,
+.approved-points-value span,
+.points-balance-box em,
+.points-balance-box span,
+.points-value-box em,
+.points-value-box span,
+.fabricator-points-value em,
+.fabricator-points-value span {
+  color: #f7c84b !important;
+  font-size: 13px !important;
+  font-style: normal !important;
+  font-weight: 900 !important;
+}
+
+/* Hide the duplicated workshop/name cell inside the points card only. */
+.points-card .registered-workshop,
+.points-card .points-workshop,
+.points-card .workshop-cell,
+.points-card .workshop-info,
+.fabricator-points-card .registered-workshop,
+.fabricator-points-card .points-workshop,
+.fabricator-points-card .workshop-cell,
+.fabricator-points-card .workshop-info,
+.approved-points-card .registered-workshop,
+.approved-points-card .points-workshop,
+.approved-points-card .workshop-cell,
+.approved-points-card .workshop-info {
+  display: none !important;
+}
+
+@media (max-width: 720px) {
+  .points-card,
+  .fabricator-points-card,
+  .approved-points-card,
+  .blue-points-card,
+  .fabricator-score-card {
+    min-height: 160px !important;
+    padding: 18px 14px !important;
+  }
+}
+/* ASR_FABRICATOR_POINTS_CARD_SAFE_UI_END */
+
+/* ASR_POINTS_SPACING_AND_WORKSHOP_HIDE_START */
+/* Approved points card: clear spacing and no duplicated workshop cell */
+.points-card,
+.fabricator-points-card,
+.approved-points-card,
+.blue-points-card,
+.fabricator-score-card {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  min-height: 168px !important;
+  padding: 22px 16px !important;
+}
+
+.points-card-title,
+.approved-points-label,
+.points-card .label,
+.fabricator-points-card .label,
+.approved-points-card .label {
+  width: 100% !important;
+  margin: 0 0 18px !important;
+  text-align: center !important;
+}
+
+.points-gold-box,
+.approved-points-value,
+.points-balance-box,
+.points-value-box,
+.fabricator-points-value {
+  margin: 0 auto !important;
+}
+
+/* Hide legacy workshop/name card if older markup remains. */
+.registered-workshop,
+.points-workshop,
+.workshop-cell,
+.workshop-info,
+.registered-workshop-cell,
+.points-card [data-workshop],
+.fabricator-points-card [data-workshop],
+.approved-points-card [data-workshop] {
+  display: none !important;
+}
+
+@media (max-width: 720px) {
+  .points-card,
+  .fabricator-points-card,
+  .approved-points-card,
+  .blue-points-card,
+  .fabricator-score-card {
+    min-height: 154px !important;
+    padding: 18px 14px !important;
+  }
+
+  .points-card-title,
+  .approved-points-label,
+  .points-card .label,
+  .fabricator-points-card .label,
+  .approved-points-card .label {
+    margin-bottom: 16px !important;
+  }
+}
+/* ASR_POINTS_SPACING_AND_WORKSHOP_HIDE_END */
+
+/* ASR_APPROVED_POINTS_FINAL_SPACING_START */
+/* Final approved-points card spacing */
+.points-card,
+.fabricator-points-card,
+.approved-points-card,
+.blue-points-card,
+.fabricator-score-card {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  min-height: 150px !important;
+  padding: 22px 16px !important;
+}
+
+.points-card-title,
+.approved-points-label,
+.points-card .label,
+.fabricator-points-card .label,
+.approved-points-card .label {
+  width: 100% !important;
+  margin: 0 0 20px !important;
+  text-align: center !important;
+}
+
+.points-gold-box,
+.approved-points-value,
+.points-balance-box,
+.points-value-box,
+.fabricator-points-value {
+  margin: 0 auto !important;
+}
+
+@media (max-width: 720px) {
+  .points-card,
+  .fabricator-points-card,
+  .approved-points-card,
+  .blue-points-card,
+  .fabricator-score-card {
+    min-height: 142px !important;
+    padding: 20px 14px !important;
+  }
+
+  .points-card-title,
+  .approved-points-label,
+  .points-card .label,
+  .fabricator-points-card .label,
+  .approved-points-card .label {
+    margin-bottom: 18px !important;
+  }
+}
+/* ASR_APPROVED_POINTS_FINAL_SPACING_END */
+
+/* ASR_POINTS_TITLE_SPACING_FINAL_START */
+/* Approved points card: balanced heading/value spacing */
+.points-card > div:first-child {
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+.points-card > div:first-child > span:first-child {
+  display: block !important;
+  width: 100% !important;
+  margin: 0 0 20px !important;
+  text-align: center !important;
+}
+
+.points-card .points-gold-box {
+  margin: 0 auto !important;
+}
+
+/* The actual old workshop element uses this class. */
+.points-card > .workshop-pill,
+.points-card .workshop-pill {
+  display: none !important;
+}
+
+/* Remove the unused height left by the workshop card. */
+.points-card {
+  min-height: 154px !important;
+  padding: 20px 16px !important;
+  justify-content: center !important;
+}
+
+@media (max-width: 720px) {
+  .points-card > div:first-child > span:first-child {
+    margin-bottom: 18px !important;
+  }
+
+  .points-card {
+    min-height: 148px !important;
+    padding: 18px 14px !important;
+  }
+}
+/* ASR_POINTS_TITLE_SPACING_FINAL_END */
+
+/* ASR_EXACT_SITE_NAME_CLAIM_UI_START */
+.site-name-field {
+  margin-top: 14px;
+}
+
+.required-mark {
+  color: #dc2626;
+  font-weight: 950;
+}
+
+.claim-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.claim-details-grid > div {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.claim-details-grid span {
+  display: block;
+  margin-bottom: 3px;
+  color: #64748b;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.claim-details-grid b {
+  display: block;
+  overflow-wrap: anywhere;
+  color: #0f172a;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.claim-details-grid .claim-detail-site {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+@media (max-width: 380px) {
+  .claim-details-grid {
+    grid-template-columns: 1fr;
+  }
+}
+/* ASR_EXACT_SITE_NAME_CLAIM_UI_END */
+
+/* ASR_REDEMPTION_WORKFLOW_UI_START */
+.redeem-points-btn {
+  margin-top: 14px;
+  padding: 8px 16px;
+  border: 1px solid #f5b82e;
+  border-radius: 999px;
+  background: transparent;
+  color: #f7c84b;
+  font-size: 11px;
+  font-weight: 950;
+  cursor: pointer;
+}
+.redeem-points-btn:active { transform: scale(.97); }
+.redeem-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, .52);
+  backdrop-filter: blur(4px);
+}
+.redeem-modal-card {
+  position: relative;
+  width: min(360px, 94vw);
+  padding: 22px;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .28);
+}
+.redeem-modal-card h3 { margin: 0 0 6px; color: #0a3e7a; }
+.redeem-modal-card > p { margin: 0 0 16px; color: #64748b; font-size: 12px; }
+.redeem-modal-close {
+  position: absolute; top: 12px; right: 12px;
+  width: 34px; height: 34px; border: 0; border-radius: 11px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #f1f5f9; color: #475569;
+}
+.redeem-modal-actions,
+.redemption-admin-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 14px;
+}
+.redeem-insufficient {
+  margin-top: 9px;
+  padding: 9px 10px;
+  border: 1px solid #fecaca;
+  border-radius: 11px;
+  background: #fff1f2;
+  color: #b91c1c;
+  font-size: 11px;
+  font-weight: 800;
+}
+.redemption-admin-card,
+.redemption-history-card {
+  margin-bottom: 12px;
+  padding: 14px;
+  border: 1px solid #dbe4ef;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, .05);
+}
+.redemption-admin-head,
+.redemption-history-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.redemption-admin-head p,
+.redemption-history-card p,
+.redemption-history-card small { margin: 3px 0 0; color: #64748b; font-size: 10px; }
+.redemption-points-badge {
+  padding: 7px 10px;
+  border: 1px solid #f5b82e;
+  border-radius: 999px;
+  color: #9a5b00;
+  background: #fffaf0;
+  font-size: 11px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+.redemption-balance-line {
+  margin: 10px 0;
+  padding: 9px 10px;
+  border-radius: 11px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 11px;
+}
+.redemption-history-section { margin-top: 22px; }
+.redemption-history-section h3 { margin: 0 0 10px; color: #0f172a; font-size: 14px; }
+/* ASR_REDEMPTION_WORKFLOW_UI_END */
+
+/* ASR_FABRICATOR_COMPACT_NAV_FINAL_START */
+/* Remove duplicate Apply Incentive / History navigation at the top.
+   Bottom navigation remains unchanged and fully functional. */
+.fabricator-tabs {
+  display: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+/* Let the approved-points card occupy the space released above. */
+.fabricator-wrap {
+  gap: 14px !important;
+}
+
+.points-card {
+  min-height: 222px !important;
+  padding: 28px 18px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 18px !important;
+  text-align: center !important;
+  border-radius: 22px !important;
+}
+
+.points-card > div:first-child {
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.points-card > div:first-child > span:first-child {
+  display: block !important;
+  width: 100% !important;
+  margin: 0 0 22px !important;
+  text-align: center !important;
+}
+
+.points-card .points-gold-box {
+  min-width: 168px !important;
+  margin: 0 auto !important;
+  padding: 15px 28px !important;
+  border-radius: 20px !important;
+}
+
+.points-card .points-gold-box strong {
+  font-size: 48px !important;
+}
+
+/* Larger, easier-to-tap redemption action. */
+.redeem-points-btn {
+  min-width: 162px !important;
+  min-height: 46px !important;
+  margin-top: 18px !important;
+  padding: 11px 24px !important;
+  border-width: 1.5px !important;
+  border-radius: 999px !important;
+  font-size: 13px !important;
+  font-weight: 950 !important;
+  letter-spacing: .01em !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Keep removed workshop duplicate hidden. */
+.points-card .workshop-pill,
+.points-card .registered-workshop,
+.points-card .workshop-info {
+  display: none !important;
+}
+
+@media (max-width: 720px) {
+  .fabricator-wrap {
+    gap: 13px !important;
+  }
+
+  .points-card {
+    min-height: 218px !important;
+    padding: 26px 16px !important;
+    gap: 16px !important;
+  }
+
+  .points-card > div:first-child > span:first-child {
+    margin-bottom: 20px !important;
+  }
+
+  .points-card .points-gold-box {
+    min-width: 156px !important;
+    padding: 14px 24px !important;
+  }
+
+  .points-card .points-gold-box strong {
+    font-size: 46px !important;
+  }
+
+  .redeem-points-btn {
+    min-width: 158px !important;
+    min-height: 46px !important;
+    padding: 11px 22px !important;
+    font-size: 13px !important;
+  }
+}
+/* ASR_FABRICATOR_COMPACT_NAV_FINAL_END */
+
+/* ASR_ENLARGE_POINTS_CARD_FILL_GAP_START */
+/* Enlarge the approved-points card so the Fabricator page uses the spare
+   vertical space above the fixed bottom navigation more evenly. */
+.points-card {
+  min-height: 315px !important;
+  padding: 38px 20px 34px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 24px !important;
+}
+
+.points-card > div:first-child {
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.points-card > div:first-child > span:first-child {
+  margin: 0 0 28px !important;
+  text-align: center !important;
+}
+
+.points-card .points-gold-box {
+  min-width: 190px !important;
+  min-height: 92px !important;
+  padding: 17px 30px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.points-card .points-gold-box strong {
+  font-size: 52px !important;
+  line-height: 1 !important;
+}
+
+.redeem-points-btn {
+  min-width: 190px !important;
+  min-height: 50px !important;
+  margin-top: 22px !important;
+  padding: 12px 28px !important;
+  font-size: 14px !important;
+}
+
+@media (max-width: 720px) {
+  .points-card {
+    min-height: 300px !important;
+    padding: 34px 18px 30px !important;
+    gap: 22px !important;
+  }
+
+  .points-card > div:first-child > span:first-child {
+    margin-bottom: 26px !important;
+  }
+
+  .points-card .points-gold-box {
+    min-width: 180px !important;
+    min-height: 180px !important;
+  }
+
+  .points-card .points-gold-box strong {
+    font-size: 50px !important;
+  }
+
+  .redeem-points-btn {
+    min-width: 180px !important;
+    min-height: 48px !important;
+    margin-top: 20px !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .points-card {
+    min-height: 285px !important;
+    padding: 30px 15px 28px !important;
+  }
+}
+/* ASR_ENLARGE_POINTS_CARD_FILL_GAP_END */
+
+/* ASR_PENDING_CLAIM_DELETE_EXACT_CSS_START */
+.asr-claim-history-card {
+  position: relative;
+  padding-right: 14px !important;
+}
+
+.asr-pending-claim-delete {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid #fecaca;
+  border-radius: 11px;
+  background: #fff1f2;
+  color: #dc2626;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.08);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.asr-pending-claim-delete:hover,
+.asr-pending-claim-delete:focus-visible {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  outline: none;
+}
+
+.asr-pending-claim-delete:active {
+  transform: scale(0.96);
+}
+
+@media (max-width: 720px) {
+  .asr-claim-history-card {
+    padding-right: 14px !important;
+  }
+
+  .asr-pending-claim-delete {
+    right: 12px;
+    bottom: 12px;
+    width: 32px;
+    height: 32px;
+  }
+}
+/* ASR_PENDING_CLAIM_DELETE_EXACT_CSS_END */
+
+/* ASR_FABRICATOR_ALERT_INDICATOR_FIXED_START */
+.fabricator-alert-status-icon {
+  position: relative;
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid #dbe5f1;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .1s ease, color .16s ease, background-color .16s ease, border-color .16s ease;
+}
+.fabricator-alert-status-icon.on {
+  color: #15803d;
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+.fabricator-alert-status-icon.off {
+  color: #9a5b13;
+  background: #fff7ed;
+  border-color: #fdba74;
+}
+.fabricator-alert-status-icon:active { transform: scale(.96); }
+.fabricator-alert-status-dot {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f59e0b;
+  border: 1.5px solid #fff;
+}
+.fabricator-alert-status-icon.on .fabricator-alert-status-dot { background: #22c55e; }
+@media (max-width: 720px) {
+  .fabricator-alert-status-icon {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    border-radius: 11px;
+  }
+}
+/* ASR_FABRICATOR_ALERT_INDICATOR_FIXED_END */
+
+/* ASR_ALERT_BELL_GREEN_FINAL_START */
+/* Final Fabricator alert indicator colors. Keep at the end of styles.css. */
+button.fabricator-alert-status-icon.on {
+  color: #15803d !important;
+  background: #ecfdf3 !important;
+  border-color: #4ade80 !important;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.10) !important;
+}
+
+button.fabricator-alert-status-icon.on > svg {
+  color: #15803d !important;
+  stroke: #15803d !important;
+}
+
+button.fabricator-alert-status-icon.on .fabricator-alert-status-dot {
+  background: #22c55e !important;
+  border-color: #ffffff !important;
+}
+
+button.fabricator-alert-status-icon.off {
+  color: #b45309 !important;
+  background: #fff7ed !important;
+  border-color: #fdba74 !important;
+  box-shadow: none !important;
+}
+
+button.fabricator-alert-status-icon.off > svg {
+  color: #b45309 !important;
+  stroke: #b45309 !important;
+}
+
+button.fabricator-alert-status-icon.off .fabricator-alert-status-dot {
+  background: #f59e0b !important;
+}
+/* ASR_ALERT_BELL_GREEN_FINAL_END */
+
+/* ASR_FABRICATOR_STATUS_ICONS_CSS_START */
+.fabricator-claim-status-icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+}
+
+.fabricator-claim-status-icon.pending {
+  color: #a16207;
+  background: #fef3c7;
+  border-color: #fde68a;
+}
+
+.fabricator-claim-status-icon.approved {
+  color: #15803d;
+  background: #dcfce7;
+  border-color: #bbf7d0;
+}
+
+.fabricator-claim-status-icon.rejected {
+  color: #dc2626;
+  background: #fee2e2;
+  border-color: #fecaca;
+}
+
+@media (max-width: 720px) {
+  .fabricator-claim-status-icon {
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
+  }
+}
+/* ASR_FABRICATOR_STATUS_ICONS_CSS_END */
+
+/* ASR_LARGE_CLAIM_STAMP_CSS_START */
+.asr-claim-history-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.fabricator-claim-stamp {
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  z-index: 1;
+  min-width: 112px;
+  height: 38px;
+  padding: 0 13px;
+  border: 2px solid currentColor;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.92);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  transform: rotate(-5deg);
+  box-shadow: 0 5px 14px rgba(15, 23, 42, 0.08);
+  pointer-events: none;
+}
+
+.fabricator-claim-stamp.approved {
+  color: #15803d;
+  background: rgba(240, 253, 244, 0.96);
+}
+
+.fabricator-claim-stamp.rejected {
+  color: #dc2626;
+  background: rgba(254, 242, 242, 0.96);
+}
+
+.fabricator-claim-pending {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 10px;
+  border: 1px solid #fde68a;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #a16207;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+/* Approved/rejected cards need room for the larger stamp. */
+.asr-claim-history-card:has(.fabricator-claim-stamp) {
+  padding-top: 58px !important;
+}
+
+@media (max-width: 720px) {
+  .fabricator-claim-stamp {
+    right: 10px;
+    top: 10px;
+    min-width: 104px;
+    height: 35px;
+    padding: 0 11px;
+    font-size: 11px;
+  }
+
+  .asr-claim-history-card:has(.fabricator-claim-stamp) {
+    padding-top: 54px !important;
+  }
+}
+/* ASR_LARGE_CLAIM_STAMP_CSS_END */
+
+/* ASR_TRUE_CIRCULAR_STATUS_SEALS_START */
+/* Final large circular approval/rejection seals.
+   This block intentionally overrides all older rectangular stamp styles. */
+.fabricator-claim-status-icon.asr-status-stamp,
+.asr-status-stamp.fabricator-claim-status-icon {
+  position: relative !important;
+  width: 132px !important;
+  min-width: 132px !important;
+  max-width: 132px !important;
+  height: 132px !important;
+  min-height: 132px !important;
+  max-height: 132px !important;
+  margin: 0 4px 0 auto !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 50% !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: rotate(-7deg) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: visible !important;
+  align-self: center !important;
+  justify-self: end !important;
+}
+
+.fabricator-claim-status-icon.asr-status-stamp .asr-status-stamp-ring {
+  position: relative !important;
+  box-sizing: border-box !important;
+  width: 118px !important;
+  min-width: 118px !important;
+  height: 118px !important;
+  min-height: 118px !important;
+  padding: 22px 12px 14px !important;
+  border: 4px double currentColor !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  box-shadow:
+    0 0 0 3px #fff,
+    0 0 0 5px currentColor,
+    inset 0 0 0 3px rgba(255,255,255,.92) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  overflow: visible !important;
+  transform: none !important;
+}
+
+/* Scalloped/dotted outer seal edge. */
+.fabricator-claim-status-icon.asr-status-stamp .asr-status-stamp-ring::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: -10px !important;
+  border: 3px dotted currentColor !important;
+  border-radius: 50% !important;
+  opacity: 1 !important;
+  display: block !important;
+}
+
+/* Bottom seal text. */
+.fabricator-claim-status-icon.asr-status-stamp .asr-status-stamp-ring::after {
+  position: absolute !important;
+  left: 50% !important;
+  bottom: 12px !important;
+  transform: translateX(-50%) rotate(180deg) !important;
+  color: currentColor !important;
+  font-size: 8px !important;
+  line-height: 1 !important;
+  font-weight: 1000 !important;
+  letter-spacing: .13em !important;
+  white-space: nowrap !important;
+  display: block !important;
+}
+
+.fabricator-claim-status-icon.asr-status-stamp.approved .asr-status-stamp-ring::after {
+  content: 'APPROVED • APPROVED' !important;
+}
+
+.fabricator-claim-status-icon.asr-status-stamp.rejected .asr-status-stamp-ring::after {
+  content: 'REJECTED • REJECTED' !important;
+}
+
+.fabricator-claim-status-icon.asr-status-stamp .asr-status-stamp-word {
+  position: absolute !important;
+  top: 13px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: auto !important;
+  color: currentColor !important;
+  font-size: 9px !important;
+  line-height: 1 !important;
+  font-weight: 1000 !important;
+  letter-spacing: .14em !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+}
+
+.fabricator-claim-status-icon.asr-status-stamp .asr-status-stamp-symbol {
+  width: 58px !important;
+  height: 58px !important;
+  margin: 2px 0 7px !important;
+  color: currentColor !important;
+  stroke: currentColor !important;
+  fill: none !important;
+  display: block !important;
+}
+
+.fabricator-claim-status-icon.asr-status-stamp.approved {
+  color: #08b83f !important;
+}
+
+.fabricator-claim-status-icon.asr-status-stamp.rejected {
+  color: #f12f2f !important;
+}
+
+/* Reserve the full marked right-side area for the circle. */
+.fabricator-history-card,
+.fabricator-claim-history-card,
+.claim-history-card {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 118px !important;
+  column-gap: 10px !important;
+  align-items: center !important;
+  overflow: visible !important;
+}
+
+/* Circular seal in Redemption History as well. */
+.asr-redemption-status-stamp {
+  position: relative !important;
+  width: 92px !important;
+  min-width: 92px !important;
+  height: 92px !important;
+  min-height: 92px !important;
+  margin: 0 4px 0 auto !important;
+  padding: 17px 8px 10px !important;
+  border: 4px double currentColor !important;
+  border-radius: 50% !important;
+  background: rgba(255,255,255,.96) !important;
+  box-shadow: 0 0 0 3px #fff, 0 0 0 5px currentColor !important;
+  transform: rotate(-7deg) !important;
+  display: inline-flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: visible !important;
+}
+
+.asr-redemption-status-stamp::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: -10px !important;
+  border: 3px dotted currentColor !important;
+  border-radius: 50% !important;
+}
+
+.asr-redemption-status-stamp .asr-status-stamp-word {
+  position: absolute !important;
+  top: 12px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  font-size: 7px !important;
+  letter-spacing: .1em !important;
+  white-space: nowrap !important;
+}
+
+.asr-redemption-status-stamp svg {
+  width: 43px !important;
+  height: 43px !important;
+  margin-top: 6px !important;
+  color: currentColor !important;
+  stroke: currentColor !important;
+}
+
+.asr-redemption-status-stamp.approved { color: #08b83f !important; }
+.asr-redemption-status-stamp.rejected { color: #f12f2f !important; }
+
+@media (max-width: 420px) {
+  .fabricator-claim-status-icon.asr-status-stamp,
+  .asr-status-stamp.fabricator-claim-status-icon {
+    width: 116px !important;
+    min-width: 116px !important;
+    max-width: 116px !important;
+    height: 116px !important;
+    min-height: 116px !important;
+    max-height: 116px !important;
+  }
+
+  .fabricator-claim-status-icon.asr-status-stamp .asr-status-stamp-ring {
+    width: 102px !important;
+    min-width: 102px !important;
+    height: 102px !important;
+    min-height: 102px !important;
+  }
+
+  .fabricator-claim-status-icon.asr-status-stamp .asr-status-stamp-symbol {
+    width: 50px !important;
+    height: 50px !important;
+  }
+
+  .fabricator-claim-status-icon.asr-status-stamp .asr-status-stamp-word {
+    font-size: 8px !important;
+  }
+
+  .fabricator-claim-status-icon.asr-status-stamp .asr-status-stamp-ring::after {
+    font-size: 7px !important;
+  }
+
+  .fabricator-history-card,
+  .fabricator-claim-history-card,
+  .claim-history-card {
+    grid-template-columns: minmax(0, 1fr) 118px !important;
+    column-gap: 5px !important;
+  }
+
+  .asr-redemption-status-stamp {
+    width: 82px !important;
+    min-width: 82px !important;
+    height: 82px !important;
+    min-height: 82px !important;
+  }
+}
+/* ASR_TRUE_CIRCULAR_STATUS_SEALS_END */

@@ -107,9 +107,36 @@ function Logo({ dark = false, loading = false }) {
   );
 }
 export default function App() {
+/* ASR_SCROLL_UNLOCK_SAFETY_START */
+  useEffect(() => {
+    const unlockPage = () => {
+      document.documentElement.classList.remove('asr-add-item-lock');
+      document.body.classList.remove('asr-add-item-lock');
+      document.documentElement.style.removeProperty('overflow');
+      document.documentElement.style.removeProperty('position');
+      document.documentElement.style.removeProperty('top');
+      document.documentElement.style.removeProperty('width');
+      document.body.style.removeProperty('overflow');
+      document.body.style.removeProperty('position');
+      document.body.style.removeProperty('top');
+      document.body.style.removeProperty('width');
+    };
 
+    unlockPage();
+    window.addEventListener('pageshow', unlockPage);
+    window.addEventListener('focus', unlockPage);
+    document.addEventListener('visibilitychange', unlockPage);
 
-  // ASR_FORCE_VISIBLE_CLEAR_BUTTON_V4: force a visible delete-all button beside Reset, without MutationObserver loops.
+    return () => {
+      unlockPage();
+      window.removeEventListener('pageshow', unlockPage);
+      window.removeEventListener('focus', unlockPage);
+      document.removeEventListener('visibilitychange', unlockPage);
+    };
+  }, []);
+  /* ASR_SCROLL_UNLOCK_SAFETY_END */
+
+// ASR_FORCE_VISIBLE_CLEAR_BUTTON_V4: force a visible delete-all button beside Reset, without MutationObserver loops.
   const asrClearEveryQuoteState = () => {
     try {
       if (typeof setQuoteItems === "function") setQuoteItems([]);
@@ -575,6 +602,12 @@ export default function App() {
     [newItem, setNewItem] = useState({ name: "", unit: "kg", points: "" });
   const [claimItemId, setClaimItemId] = useState(""),
     [claimQty, setClaimQty] = useState(""),
+    [redemptions, setRedemptions] = useState([]),
+    [redeemModalOpen, setRedeemModalOpen] = useState(false),
+    [redeemPoints, setRedeemPoints] = useState(""),
+    [redeemError, setRedeemError] = useState(""),
+    [redeemNarrations, setRedeemNarrations] = useState({}),
+    [siteName, setSiteName] = useState(""),
     [claimOk, setClaimOk] = useState(false);
   const [notifications, setNotifications] = useState([]),
     [newNotification, setNewNotification] = useState({
@@ -641,6 +674,20 @@ export default function App() {
         .reduce((sum, s) => sum + num(s.points_earned), 0),
     [myClaims],
   );
+  const myRedemptions = useMemo(
+    () => redemptions.filter((r) => String(r.fabricator_id) === String(user?.id)),
+    [redemptions, user],
+  );
+  const pendingRedemptionPoints = useMemo(
+    () => myRedemptions
+      .filter((r) => String(r.status).toLowerCase() === "pending")
+      .reduce((sum, r) => sum + num(r.points ?? r.points_requested), 0),
+    [myRedemptions],
+  );
+  const availableRedemptionPoints = Math.max(
+    0,
+    num(activeFabricator?.total_points) - pendingRedemptionPoints,
+  );
   const visibleNotifications = useMemo(() => {
     if (!user) return [];
     const role = String(user.role || "").toLowerCase();
@@ -690,6 +737,43 @@ export default function App() {
     setNotifications(updated);
     return row;
   }
+  /* ASR_REDEMPTION_REFRESH_AFTER_STATE_START */
+  useEffect(() => {
+    if (!user || !supabase) return;
+
+    const role = String(user.role || '').toLowerCase();
+    const shouldRefresh =
+      (role === 'admin' && adminTab === 'redemptions') ||
+      (role === 'fabricator' && fabTab === 'history');
+
+    if (!shouldRefresh) return;
+
+    let cancelled = false;
+
+    const refresh = async () => {
+      const { data, error } = await supabase
+        .from('redemption_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (cancelled) return;
+
+      if (error) {
+        console.error('Could not load redemption requests', error);
+        setToast(error.message || 'Could not load redemption requests.');
+        return;
+      }
+
+      setRedemptions(data || []);
+    };
+
+    refresh();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, user?.role, adminTab, fabTab]);
+  /* ASR_REDEMPTION_REFRESH_AFTER_STATE_END */
+
   async function loadAll() {
     setLoading(true);
     if (!supabase) {
@@ -698,7 +782,7 @@ export default function App() {
       setLoading(false);
       return;
     }
-    const [f, s, i, c, r] = await Promise.all([
+    const [f, s, i, c, r, rd] = await Promise.all([
       supabase.from("fabricators").select("*").order("created_at"),
       supabase
         .from("submissions")
@@ -707,15 +791,17 @@ export default function App() {
       supabase.from("incentive_items").select("*").order("created_at"),
       supabase.from("rate_categories").select("*").order("name"),
       supabase.from("rate_items").select("*").order("created_at"),
+      supabase.from("redemption_requests").select("*").order("created_at", { ascending: false }),
     ]);
-    if (f.error || s.error || i.error || c.error || r.error)
-      setToast("Database load failed. Check Supabase/RLS.");
+    if (f.error || s.error || i.error || c.error || r.error || rd.error)
+      setToast("Database load failed. Check Supabase/RLS and run the redemption SQL.");
     else {
       setFabricators(f.data || []);
       setSubmissions(s.data || []);
       setItems(i.data || []);
       setCategories(c.data || []);
       setRateItems(r.data || []);
+      setRedemptions(rd.data || []);
       if (!categoryId && c.data?.length) setCategoryId(c.data[0].id);
     }
     await loadNotifications();
@@ -724,6 +810,7 @@ export default function App() {
   useEffect(() => {
     loadAll();
     const saved = JSON.parse(localStorage.getItem("asrLogin") || "null");
+    if (saved?.role === "fabricator" && saved?.tab === "alerts") saved.tab = "apply";
     if (saved?.auto) {
       setLoginId(saved.loginId || "");
       setLoginPassword(saved.loginPassword || "");
@@ -840,12 +927,17 @@ export default function App() {
   }
   async function submitClaim(e) {
     e.preventDefault();
+    if (!siteName.trim()) {
+      setToast("Please enter the Site Name.");
+      return;
+    }
     const item = items.find((i) => i.id === claimItemId);
     if (!item || !claimQty || Number(claimQty) <= 0) return;
     const q = Number(claimQty),
       points = q * num(item.points_per_unit);
     const payload = {
       fabricator_id: user.id,
+      site_name: siteName.trim(),
       item_id: item.id,
       item_name: item.name,
       quantity: q,
@@ -862,6 +954,7 @@ export default function App() {
     setSubmissions((prev) => [data, ...prev]);
     setClaimItemId("");
     setClaimQty("");
+    setSiteName("");
     setClaimOk(true);
     setToast("Claim submitted for admin approval.");
     setTimeout(() => setClaimOk(false), 1800);
@@ -956,6 +1049,118 @@ export default function App() {
       setToast("Notification history cleared from this device.");
     });
   }
+  async function refreshRedemptionsOnly() {
+    const { data, error } = await supabase
+      .from("redemption_requests")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Could not load redemption requests", error);
+      setToast(error.message || "Could not load redemption requests.");
+      return [];
+    }
+
+    setRedemptions(data || []);
+    return data || [];
+  }
+
+  async function submitRedemptionRequest(e) {
+    e.preventDefault();
+    setRedeemError("");
+
+    const requested = num(redeemPoints);
+    if (requested <= 0) {
+      setRedeemError("Enter points greater than zero.");
+      return;
+    }
+    if (requested > availableRedemptionPoints) {
+      setRedeemError(
+        "Insufficient points. Available for redemption: " +
+          availableRedemptionPoints.toLocaleString("en-IN") +
+          " pts.",
+      );
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.rpc("request_redemption", {
+        p_fabricator_id: String(user.id),
+        p_points: requested,
+      });
+
+      if (error) {
+        setRedeemError(error.message || "Could not submit redemption request.");
+        return;
+      }
+
+      const createdId =
+        typeof data === "string" || typeof data === "number"
+          ? data
+          : data?.id || data?.request_id;
+
+      const optimisticRow = {
+        id: createdId || "pending-" + Date.now(),
+        fabricator_id: String(user.id),
+        points: requested,
+        status: "Pending",
+        narration: null,
+        created_at: new Date().toISOString(),
+      };
+
+      setRedemptions((prev) => [
+        optimisticRow,
+        ...prev.filter((row) => String(row.id) !== String(optimisticRow.id)),
+      ]);
+      setRedeemPoints("");
+      setRedeemError("");
+      setRedeemModalOpen(false);
+      await refreshRedemptionsOnly();
+      setFabTab("history");
+      setToast("Redemption request sent for admin approval.");
+      await loadAll();
+    } catch (error) {
+      console.error("Redemption request failed", error);
+      setRedeemError(error?.message || "Could not submit redemption request.");
+    }
+  }
+
+  async function approveRedemption(row) {
+    const narration = String(redeemNarrations[row.id] || "").trim();
+    if (!narration) {
+      setToast("Enter redemption narration, for example UPI or Cash.");
+      return;
+    }
+    const { error } = await supabase.rpc("approve_redemption", {
+      p_redemption_id: row.id,
+      p_narration: narration,
+    });
+    if (error) return setToast(error.message);
+    setRedeemNarrations((prev) => ({ ...prev, [row.id]: "" }));
+    setToast("Redemption approved and points deducted.");
+    await loadAll();
+  }
+
+  async function rejectRedemption(row) {
+    const narration = String(redeemNarrations[row.id] || "").trim();
+    if (!narration) {
+      setToast("Enter a narration/reason before rejecting.");
+      return;
+    }
+    const { error } = await supabase.rpc("reject_redemption", {
+      p_redemption_id: row.id,
+      p_narration: narration,
+    });
+    if (error) return setToast(error.message);
+    setRedeemNarrations((prev) => ({ ...prev, [row.id]: "" }));
+    setRedemptions((prev) =>
+      prev.map((x) =>
+        x.id === row.id ? { ...x, status: "Rejected", narration } : x,
+      ),
+    );
+    setToast("Redemption request rejected.");
+  }
+
   async function updateMarketRate(row, newRate, newFreight = row.freight) {
     const patch = {
       previous_daily_rate: num(row.daily_rate),
@@ -2030,9 +2235,24 @@ export default function App() {
                       Claim by: <b>{fab?.name || "Unknown Fabricator"}</b>
                       {fab?.mobile ? <span> · {fab.mobile}</span> : null}
                     </div>
-                    <p className="claim-meta">
-                      {s.quantity} {s.unit} • {s.points_earned} pts
-                    </p>
+                    <div className="claim-details-grid admin-claim-details">
+                      <div className="claim-detail-site">
+                        <span>Site Name</span>
+                        <b>{s.site_name || "Not provided"}</b>
+                      </div>
+                      <div>
+                        <span>Date</span>
+                        <b>{new Date(s.created_at || s.submission_date).toLocaleDateString("en-GB")}</b>
+                      </div>
+                      <div>
+                        <span>Quantity</span>
+                        <b>{s.quantity} {s.unit}</b>
+                      </div>
+                      <div>
+                        <span>Points</span>
+                        <b>{s.points_earned} pts</b>
+                      </div>
+                    </div>
                   </div>
                   <div className="claim-points-badge">
                     +{s.points_earned}
@@ -2060,6 +2280,72 @@ export default function App() {
       </div>
     );
   }
+  function redemptionsPage() {
+    const pending = redemptions.filter((r) => String(r.status).toLowerCase() === "pending");
+    return (
+      <div className="area">
+        <h2 className="section-title">Redemption Requests</h2>
+        {pending.length === 0 ? (
+          <div className="empty">No pending redemption requests.</div>
+        ) : (
+          pending.map((r) => {
+            const fab = fabricators.find((f) => String(f.id) === String(r.fabricator_id));
+            return (
+              <div className="redemption-admin-card" key={r.id}>
+                <div className="redemption-admin-head">
+                  <div>
+                    <b>{fab?.name || "Unknown Fabricator"}</b>
+                    <p>{fab?.mobile || ""}</p>
+                  </div>
+                  <div className="redemption-points-badge">
+                    {num(r.points ?? r.points_requested).toLocaleString("en-IN")} pts
+                  </div>
+                </div>
+                <div className="redemption-balance-line">
+                  Current balance: <b>{num(fab?.total_points).toLocaleString("en-IN")} pts</b>
+                </div>
+                <div className="field">
+                  <label className="label">Narration / Redemption Method</label>
+                  <input
+                    className="input"
+                    value={redeemNarrations[r.id] || ""}
+                    onChange={(e) =>
+                      setRedeemNarrations((prev) => ({
+                        ...prev,
+                        [r.id]: e.target.value,
+                      }))
+                    }
+                    placeholder="Example: UPI paid to mobile, Cash, Gift item"
+                  />
+                </div>
+                <div className="redemption-admin-actions">
+                  <button
+                    className="btn btn-danger"
+                    onClick={() => rejectRedemption(r)}
+                  >
+                    Reject
+                  </button>
+                  <button
+                    className="btn btn-success"
+                    onClick={() => approveRedemption(r)}
+                    disabled={num(r.points ?? r.points_requested) > num(fab?.total_points)}
+                  >
+                    Approve
+                  </button>
+                </div>
+                {num(r.points ?? r.points_requested) > num(fab?.total_points) && (
+                  <div className="redeem-insufficient">
+                    Insufficient current balance. Approval is blocked.
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+    );
+  }
+
   function historyPage() {
     return (
       <div className="area">
@@ -2106,12 +2392,81 @@ export default function App() {
               </strong>
               <em>pts</em>
             </div>
+            <button
+              type="button"
+              className="redeem-points-btn"
+              onClick={() => {
+                setRedeemPoints("");
+                setRedeemError("");
+                setRedeemModalOpen(true);
+              }}
+            >
+              Redeem Points
+            </button>
           </div>
-          <div className="workshop-pill">
-            Registered Workshop:<b>{name}</b>
-          </div>
+          
         </div>
-        <div className="pending-card">
+        {redeemModalOpen && (
+          <div className="redeem-modal-backdrop">
+            <div className="redeem-modal-card">
+              <button
+                type="button"
+                className="redeem-modal-close"
+                onClick={() => { setRedeemError(""); setRedeemModalOpen(false); }}
+                aria-label="Close redemption form"
+              >
+                <X size={18} />
+              </button>
+              <h3>Redeem Points</h3>
+              <p>
+                Available: <b>{availableRedemptionPoints.toLocaleString("en-IN")} pts</b>
+              </p>
+              <form onSubmit={submitRedemptionRequest}>
+                <label className="label">Points to redeem</label>
+                <input
+                  className="input"
+                  type="number"
+                  inputMode="decimal"
+                  min="0.01"
+                  step="0.01"
+                  value={redeemPoints}
+                  onChange={(e) => setRedeemPoints(e.target.value)}
+                  placeholder="Enter points"
+                  required
+                />
+                {redeemError && (
+                  <div className="redeem-insufficient">{redeemError}</div>
+                )}
+                {num(redeemPoints) > availableRedemptionPoints && !redeemError && (
+                  <div className="redeem-insufficient">
+                    Insufficient points. You can request up to {availableRedemptionPoints.toLocaleString("en-IN")} pts.
+                  </div>
+                )}
+                <div className="redeem-modal-actions">
+                  <button
+                    type="button"
+                    className="btn btn-soft"
+                    onClick={() => { setRedeemError(""); setRedeemModalOpen(false); }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="btn btn-primary"
+                    disabled={
+                      num(redeemPoints) <= 0 ||
+                      num(redeemPoints) > availableRedemptionPoints
+                    }
+                  >
+                    Request Approval
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+        {/* ASR_HIDE_ZERO_PENDING_EXACT_START */}
+        {num(pendingPoints) > 0 && (
+          <div className="pending-card">
           <div>
             <Clock size={16} />
             Awaiting Review
@@ -2121,6 +2476,8 @@ export default function App() {
             {pendingPoints.toLocaleString()} <em>pts</em>
           </strong>
         </div>
+        )}
+        {/* ASR_HIDE_ZERO_PENDING_EXACT_END */}
         {fabTab === "apply" ? applyIncentivePage() : fabricatorHistoryPage()}
       </div>
     );
@@ -2186,6 +2543,22 @@ export default function App() {
               )}
             </div>
           )}
+          <div className="field site-name-field">
+            <label className="label" htmlFor="fabricator-site-name">
+              Site Name <span className="required-mark">*</span>
+            </label>
+            <input
+              id="fabricator-site-name"
+              name="site_name"
+              className="input"
+              type="text"
+              value={siteName}
+              onChange={(e) => setSiteName(e.target.value)}
+              placeholder="Enter project / site name"
+              autoComplete="organization"
+              required
+            />
+          </div>
           <button className="btn btn-primary full submit-claim-btn">
             Submit for Admin Approval
           </button>
@@ -2193,6 +2566,171 @@ export default function App() {
       </div>
     );
   }
+  /* ASR_PENDING_CLAIM_DELETE_EXACT_START */
+  function deletePendingClaim(claim) {
+    if (!claim || String(claim.status || '').toLowerCase() !== 'pending') return;
+
+    askDelete(`Delete request for ${claim.item_name || 'this item'}?`, async () => {
+      const { error } = await supabase
+        .from('submissions')
+        .delete()
+        .eq('id', claim.id)
+        .eq('fabricator_id', user.id)
+        .eq("status", "Pending");
+
+      if (error) {
+        setToast(error.message || 'Could not delete the request.');
+        return;
+      }
+
+      setSubmissions((prev) => prev.filter((row) => row.id !== claim.id));
+      setToast('Pending request deleted.');
+    });
+  }
+  /* ASR_PENDING_CLAIM_DELETE_EXACT_END */
+
+  /* ASR_FABRICATOR_STATUS_ICON_HELPER_START */
+  function fabricatorClaimStatusIcon(status) {
+    const value = String(status || '').toLowerCase();
+
+    if (value === 'approved') {
+      return (
+        <span
+          className="fabricator-claim-status-icon approved"
+          title="Approved"
+          aria-label="Approved"
+        >
+          <CheckCircle2 size={18} strokeWidth={2.4} aria-hidden="true" />
+        </span>
+      );
+    }
+
+    if (value === 'rejected') {
+      return (
+        <span
+          className="fabricator-claim-status-icon rejected"
+          title="Rejected"
+          aria-label="Rejected"
+        >
+          <X size={18} strokeWidth={2.4} aria-hidden="true" />
+        </span>
+      );
+    }
+
+    return (
+      <span
+        className="fabricator-claim-status-icon pending"
+        title="Pending"
+        aria-label="Pending"
+      >
+        <Clock size={17} strokeWidth={2.4} aria-hidden="true" />
+      </span>
+    );
+  }
+  /* ASR_FABRICATOR_STATUS_ICON_HELPER_END */
+
+  /* ASR_STAMP_SVG_HELPER_START */
+  function stampSVG(type, uid, size) {
+    const color = type === 'approved' ? '#08b83f' : '#f12f2f';
+    const label = type === 'approved' ? 'APPROVED' : 'REJECTED';
+    const ringText = type === 'approved'
+      ? '\u2022 APPROVED \u2022 APPROVED \u2022 APPROVED \u2022 APPROVED \u2022 APPROVED \u2022 APPROVED \u2022'
+      : '\u2022 REJECTED \u2022 REJECTED \u2022 REJECTED \u2022 REJECTED \u2022 REJECTED \u2022 REJECTED \u2022';
+
+    const cx = 100, cy = 100;
+    const scallopBase = 84;
+    const scallopPeak = 95;
+    const innerR = 62;
+    const textR = 74;
+    const N = 24;
+    const svgSize = size != null ? size : 110;
+
+    // Generate scalloped outer border path (clockwise, starting from top)
+    let d = '';
+    for (let i = 0; i < N; i++) {
+      const a1 = (i / N) * 2 * Math.PI - Math.PI / 2;
+      const a2 = ((i + 0.5) / N) * 2 * Math.PI - Math.PI / 2;
+      const a3 = ((i + 1) / N) * 2 * Math.PI - Math.PI / 2;
+      const x1 = (cx + scallopBase * Math.cos(a1)).toFixed(2);
+      const y1 = (cy + scallopBase * Math.sin(a1)).toFixed(2);
+      const px = (cx + scallopPeak * Math.cos(a2)).toFixed(2);
+      const py = (cy + scallopPeak * Math.sin(a2)).toFixed(2);
+      const x3 = (cx + scallopBase * Math.cos(a3)).toFixed(2);
+      const y3 = (cy + scallopBase * Math.sin(a3)).toFixed(2);
+      d += i === 0 ? `M${x1} ${y1} ` : '';
+      d += `Q${px} ${py} ${x3} ${y3} `;
+    }
+    d += 'Z';
+
+    // Circular path for ring text (clockwise from top)
+    const pathId = `asr-tp-${uid}-${type}`;
+    const textCircle = `M${cx} ${cy - textR} A${textR} ${textR} 0 0 1 ${cx} ${cy + textR} A${textR} ${textR} 0 0 1 ${cx} ${cy - textR}`;
+    const circumference = (2 * Math.PI * textR).toFixed(1);
+
+    return (
+      <svg
+        viewBox="0 0 200 200"
+        width={svgSize}
+        height={svgSize}
+        style={{ display: 'block', margin: '0 auto', transform: 'rotate(-7deg)', overflow: 'visible', flexShrink: 0 }}
+        aria-label={label}
+        role="img"
+      >
+        <defs>
+          <path id={pathId} d={textCircle} />
+        </defs>
+        {/* Scalloped shape — white fill, then colored stroke */}
+        <path d={d} fill="white" />
+        <path d={d} fill="none" stroke={color} strokeWidth="3.5" />
+        {/* Inner circle */}
+        <circle cx={cx} cy={cy} r={innerR} fill="white" stroke={color} strokeWidth="3" />
+        {/* Ring text going all the way around */}
+        <text fill={color} fontSize="10" fontWeight="800" fontFamily="'Arial','Helvetica',sans-serif">
+          <textPath
+            href={`#${pathId}`}
+            startOffset="50%"
+            textAnchor="middle"
+            textLength={circumference}
+            lengthAdjust="spacing"
+          >
+            {ringText}
+          </textPath>
+        </text>
+        {/* Icon */}
+        {type === 'approved' ? (
+          <polyline
+            points="74,102 89,118 126,82"
+            fill="none"
+            stroke={color}
+            strokeWidth="9"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ) : (
+          <>
+            <line x1="77" y1="77" x2="123" y2="123" stroke={color} strokeWidth="9" strokeLinecap="round" />
+            <line x1="123" y1="77" x2="77" y2="123" stroke={color} strokeWidth="9" strokeLinecap="round" />
+          </>
+        )}
+      </svg>
+    );
+  }
+  /* ASR_STAMP_SVG_HELPER_END */
+
+  /* ASR_LARGE_CLAIM_STAMP_HELPER_START */
+  function fabricatorClaimStatusStamp(status, uid) {
+    const value = String(status || '').toLowerCase();
+    if (value === 'approved') return stampSVG('approved', uid);
+    if (value === 'rejected') return stampSVG('rejected', uid);
+    return (
+      <span className="fabricator-claim-pending" aria-label="Pending">
+        <Clock size={15} strokeWidth={2.3} aria-hidden="true" />
+        <span>Pending</span>
+      </span>
+    );
+  }
+  /* ASR_LARGE_CLAIM_STAMP_HELPER_END */
+
   function fabricatorHistoryPage() {
     return (
       <div className="area">
@@ -2204,19 +2742,65 @@ export default function App() {
           <div className="empty">No claims submitted yet.</div>
         ) : (
           myClaims.map((s) => (
-            <div className="claim-history-card" key={s.id}>
+            <div className="claim-history-card asr-claim-history-card" key={s.id}>
+              {String(s.status || '').toLowerCase() === 'pending' && (
+                <button
+                  type="button"
+                  className="asr-pending-claim-delete"
+                  onClick={() => deletePendingClaim(s)}
+                  aria-label={`Delete ${s.item_name || 'pending request'}`}
+                  title="Delete pending request"
+                >
+                  <Trash2 size={16} strokeWidth={2} aria-hidden="true" />
+                </button>
+              )}
               <div>
                 <b>{s.item_name}</b>
-                <p>
-                  {s.quantity} {s.unit} • {s.points_earned} pts
-                </p>
+                <div className="claim-details-grid fabricator-claim-details">
+                  <div className="claim-detail-site">
+                    <span>Site Name</span>
+                    <b>{s.site_name || "Not provided"}</b>
+                  </div>
+                  <div>
+                    <span>Date</span>
+                    <b>{new Date(s.created_at || s.submission_date).toLocaleDateString("en-GB")}</b>
+                  </div>
+                  <div>
+                    <span>Quantity</span>
+                    <b>{s.quantity} {s.unit}</b>
+                  </div>
+                  <div>
+                    <span>Points</span>
+                    <b>{s.points_earned} pts</b>
+                  </div>
+                </div>
               </div>
-              <span className={`status-pill ${String(s.status).toLowerCase()}`}>
-                {s.status}
-              </span>
+              {fabricatorClaimStatusStamp(s.status, s.id)}
             </div>
           ))
         )}
+        <div className="redemption-history-section">
+          <h3>Redemption History</h3>
+          {myRedemptions.length === 0 ? (
+            <div className="empty compact-empty">No redemption requests yet.</div>
+          ) : (
+            myRedemptions.map((r) => (
+              <div className="redemption-history-card" key={r.id}>
+                <div>
+                  <b>{num(r.points ?? r.points_requested).toLocaleString("en-IN")} pts</b>
+                  <p>{new Date(r.created_at).toLocaleDateString("en-GB")}</p>
+                  {r.narration && <small>{r.narration}</small>}
+                </div>
+                {(() => {
+                  const st = String(r.status || '').toLowerCase();
+                  if (st === 'approved') return stampSVG('approved', r.id, 76);
+                  if (st === 'rejected') return stampSVG('rejected', r.id, 76);
+                  return <span className={`status-pill ${st}`}>{r.status}</span>;
+                })()}
+              </div>
+            ))
+          )}
+        </div>
       </div>
     );
   }
@@ -2446,6 +3030,7 @@ export default function App() {
       { id: "market", label: "Daily Rate", icon: <BarChart3 size={18} /> },
       { id: "daily", label: "Sizes", icon: <FolderPlus size={18} /> },
       { id: "claims", label: "Claims", icon: <CheckCircle2 size={18} /> },
+      { id: "redemptions", label: "Redeem", icon: <RefreshCw size={18} /> },
       { id: "signups", label: "Signups", icon: <UserPlus size={18} /> },
       { id: "items", label: "Items", icon: <PlusCircle size={18} /> },
       { id: "notifications", label: "Notify", icon: <Megaphone size={18} /> },
@@ -2454,7 +3039,7 @@ export default function App() {
     ],
     fabMenu = [
       { id: "apply", label: "Apply", icon: <PlusCircle size={18} /> },
-      { id: "alerts", label: "Alerts", icon: <Bell size={18} /> },
+
       { id: "history", label: "History", icon: <History size={18} /> },
     ],
     salesMenu = [
@@ -2590,8 +3175,8 @@ export default function App() {
           <div className="confirm-icon">
             <Bell size={20} />
           </div>
-          <h3>Enable phone notifications?</h3>
-          <p>Turn on WhatsApp-like ASR Iron alerts for this device.</p>
+          <h3>Enable ASR Iron notifications?</h3>
+          <p>Stay updated with important ASR Iron alerts on this device.</p>
           <div className="confirm-actions">
             <button
               className="btn btn-soft"
@@ -2615,6 +3200,14 @@ export default function App() {
   }
 
   function Header({ type }) {
+    const browserAlertPermission =
+      typeof Notification !== "undefined"
+        ? Notification.permission
+        : pushPermission;
+    const fabricatorAlertsOn =
+      type === "fabricator" &&
+      alertsPreference !== "off" &&
+      browserAlertPermission === "granted";
     const roleLabel =
       type === "admin"
         ? "ADMIN"
@@ -2645,6 +3238,24 @@ export default function App() {
               </span>
             </div>
 
+            {type === "fabricator" && (
+              <button
+                type="button"
+                className={`fabricator-alert-status-icon ${fabricatorAlertsOn ? "on" : "off"}`}
+                onClick={() => {
+                  if (fabricatorAlertsOn) {
+                    setAlertsOnOff(false);
+                  } else {
+                    setAlertPromptOpen(true);
+                  }
+                }}
+                aria-label={fabricatorAlertsOn ? "Phone alerts are on" : "Phone alerts are off"}
+                title={fabricatorAlertsOn ? "Alerts On" : "Alerts Off"}
+              >
+                <Bell size={17} strokeWidth={2} aria-hidden="true" />
+                <span className="fabricator-alert-status-dot" />
+              </button>
+            )}
             <button
               className="btn btn-soft header-logout-btn app-light-logout-btn"
               onClick={logout}
@@ -2678,13 +3289,14 @@ export default function App() {
           {isAdmin && tab === "market" && marketPage()}
           {isAdmin && tab === "daily" && dailyPage()}
           {isAdmin && tab === "claims" && claimsPage()}
+          {isAdmin && tab === "redemptions" && redemptionsPage()}
           {isAdmin && tab === "signups" && signupsPage()}
           {isAdmin && tab === "items" && itemsPage()}
           {isAdmin && tab === "notifications" && notificationsPage()}
-          {tab === "alerts" && alertsPage()}
+          {tab === "alerts" && type !== "fabricator" && alertsPage()}
           {isAdmin && tab === "history" && historyPage()}
           {!isAdmin && tab === "notifications" && notificationsPage()}
-          {type === "fabricator" && tab !== "notifications" && fabricatorHome()}
+          {type === "fabricator" && !["notifications", "alerts"].includes(tab) && fabricatorHome()}
         </main>
         {bottomNav(type)}
       </div>
