@@ -5241,3 +5241,22 @@ button.fabricator-alert-status-icon.off .fabricator-alert-status-dot {
   }
 }
 /* ASR_CATEGORY_NAME_FIELD_STYLE_END */
+
+/* ASR_BUSINESS_PARTNER_SALESMAN_START */
+.registration-type-switch { display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:5px; margin-bottom:16px; border-radius:14px; background:#eef4fb; }
+.registration-type-switch button { min-height:42px; border:0; border-radius:11px; background:transparent; color:#64748b; font-weight:900; cursor:pointer; }
+.registration-type-switch button.active { background:#fff; color:#0a3e7a; box-shadow:0 4px 14px rgba(15,23,42,.1); }
+.business-signup-card p, .salesman-manage-card p { margin:5px 0 0; color:#64748b; font-size:11px; }
+.salesman-manage-card { margin-bottom:14px; padding:16px; border:1px solid #dbe4ef; border-radius:18px; background:#fff; box-shadow:0 8px 22px rgba(15,23,42,.05); }
+.salesman-manage-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:13px; }
+.salesman-manage-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.salesman-password-note { display:block; margin-top:6px; color:#64748b; font-size:9px; line-height:1.4; }
+.sales-margin-note { margin:12px 0; padding:10px 12px; border:1px solid #bfdbfe; border-radius:12px; background:#eff6ff; color:#1e3a8a; font-size:11px; font-weight:800; }
+@media (max-width:720px) { .salesman-manage-grid { grid-template-columns:1fr; } }
+/* ASR_BUSINESS_PARTNER_SALESMAN_END */
+
+/* ASR_SALESMAN_MINIMAL_UI_START */
+.sales-margin-note {
+  display: none !important;
+}
+/* ASR_SALESMAN_MINIMAL_UI_END */

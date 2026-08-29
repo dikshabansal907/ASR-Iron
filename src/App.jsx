@@ -545,6 +545,7 @@ export default function App() {
   const [screen, setScreen] = useState("login"),
     [user, setUser] = useState(null),
     [fabricators, setFabricators] = useState([]),
+    [businessUsers, setBusinessUsers] = useState([]),
     [submissions, setSubmissions] = useState([]),
     [items, setItems] = useState([]),
     [categories, setCategories] = useState([]),
@@ -566,7 +567,9 @@ export default function App() {
     [loginPassword, setLoginPassword] = useState(""),
     [loginError, setLoginError] = useState(""),
     [signup, setSignup] = useState({
+      registrationType: "partner",
       name: "",
+      userId: "",
       mobile: "",
       address: "",
       password: "",
@@ -662,6 +665,17 @@ export default function App() {
   const activeFabricator = useMemo(
     () => fabricators.find((f) => f.id === user?.id) || user,
     [fabricators, user],
+  );
+  const activeBusiness = useMemo(
+    () =>
+      businessUsers.find(
+        (b) =>
+          String(b.id) === String(user?.id) ||
+          (user?.userId &&
+            String(b.user_id || '').trim().toLowerCase() ===
+              String(user.userId).trim().toLowerCase()),
+      ) || user,
+    [businessUsers, user],
   );
   const myClaims = useMemo(
     () => submissions.filter((s) => s.fabricator_id === user?.id),
@@ -782,7 +796,7 @@ export default function App() {
       setLoading(false);
       return;
     }
-    const [f, s, i, c, r, rd] = await Promise.all([
+    const [f, s, i, c, r, rd, bu] = await Promise.all([
       supabase.from("fabricators").select("*").order("created_at"),
       supabase
         .from("submissions")
@@ -792,8 +806,9 @@ export default function App() {
       supabase.from("rate_categories").select("*").order("name"),
       supabase.from("rate_items").select("*").order("created_at"),
       supabase.from("redemption_requests").select("*").order("created_at", { ascending: false }),
+      supabase.from("business_users").select("id, business_name, user_id, mobile, address, status, margin, created_at, updated_at").order("created_at", { ascending: false }),
     ]);
-    if (f.error || s.error || i.error || c.error || r.error || rd.error)
+    if (f.error || s.error || i.error || c.error || r.error || rd.error || bu.error)
       setToast("Database load failed. Check Supabase/RLS and run the redemption SQL.");
     else {
       setFabricators(f.data || []);
@@ -802,6 +817,7 @@ export default function App() {
       setCategories(c.data || []);
       setRateItems(r.data || []);
       setRedemptions(rd.data || []);
+      setBusinessUsers(bu.data || []);
       if (!categoryId && c.data?.length) setCategoryId(c.data[0].id);
     }
     await loadNotifications();
@@ -811,6 +827,9 @@ export default function App() {
     loadAll();
     const saved = JSON.parse(localStorage.getItem("asrLogin") || "null");
     if (saved?.role === "fabricator" && saved?.tab === "alerts") saved.tab = "apply";
+    /* ASR_SALESMAN_STALE_ALERTS_GUARD_START */
+    if (saved?.role === "salesman" && saved?.tab === "alerts") saved.tab = "calculator";
+    /* ASR_SALESMAN_STALE_ALERTS_GUARD_END */
     if (saved?.auto) {
       setLoginId(saved.loginId || "");
       setLoginPassword(saved.loginPassword || "");
@@ -885,16 +904,70 @@ export default function App() {
       saveLogin("admin", u);
       return;
     }
-    if (
-      ["sales", "salesman"].includes(loginId.trim().toLowerCase()) &&
-      ["sales123", "salesman"].includes(loginPassword)
-    ) {
-      const u = { id: "salesman", name: "Salesman", role: "salesman" };
+const { data: businessRows, error: businessError } = await supabase.rpc("login_business", {
+      p_user_id: loginId.trim(),
+      p_password: loginPassword,
+    });
+    const business = Array.isArray(businessRows) ? businessRows[0] : businessRows;
+    if (!businessError && business) {
+      if (business.status !== "Approved") {
+        return setLoginError(
+          `Your Business account is ${business.status}. Admin approval is required.`,
+        );
+      }
+
+      // Always fetch the latest Business row so the assigned Margin is not
+      // taken from an older RPC/session payload.
+      const loginUserId = String(
+        business.login_user_id || business.user_id || loginId.trim(),
+      ).trim();
+
+      let latestBusiness = null;
+      const { data: latestRow, error: latestError } = await supabase
+        .from("business_users")
+        .select(
+          "id, business_name, user_id, mobile, address, status, margin, created_at, updated_at",
+        )
+        .ilike("user_id", loginUserId)
+        .maybeSingle();
+
+      if (!latestError && latestRow) latestBusiness = latestRow;
+
+      const profile = latestBusiness || business;
+      const latestMargin = num(profile.margin ?? business.margin);
+
+      const u = {
+        id: profile.id || business.business_id,
+        name: profile.business_name || business.business_name,
+        userId: profile.user_id || business.login_user_id || loginUserId,
+        mobile: profile.mobile || business.mobile,
+        address: profile.address || business.address,
+        status: profile.status || business.status,
+        margin: latestMargin,
+        role: "salesman",
+      };
+
+      if (latestBusiness) {
+        setBusinessUsers((prev) => {
+          const exists = prev.some(
+            (row) => String(row.id) === String(latestBusiness.id),
+          );
+          return exists
+            ? prev.map((row) =>
+                String(row.id) === String(latestBusiness.id)
+                  ? latestBusiness
+                  : row,
+              )
+            : [latestBusiness, ...prev];
+        });
+      }
+
       setUser(u);
       setScreen("salesman");
       saveLogin("salesman", u);
       return;
     }
+
     const { data, error } = await supabase
       .from("fabricators")
       .select("*")
@@ -917,12 +990,36 @@ export default function App() {
   async function handleSignup(e) {
     e.preventDefault();
     setSignupError("");
-    const { error } = await supabase
-      .from("fabricators")
-      .insert({ ...signup, total_points: 0, status: "Pending" });
-    if (error) return setSignupError(error.message);
+    if (signup.registrationType === "business") {
+      if (!signup.userId.trim()) return setSignupError("User ID is required.");
+      const { error } = await supabase.rpc("register_business", {
+        p_business_name: signup.name.trim(),
+        p_user_id: signup.userId.trim(),
+        p_mobile: signup.mobile.trim(),
+        p_address: signup.address.trim(),
+        p_password: signup.password,
+      });
+      if (error) return setSignupError(error.message);
+    } else {
+      const { error } = await supabase.from("fabricators").insert({
+        name: signup.name.trim(),
+        mobile: signup.mobile.trim(),
+        address: signup.address.trim(),
+        password: signup.password,
+        total_points: 0,
+        status: "Pending",
+      });
+      if (error) return setSignupError(error.message);
+    }
     setSignupOk(true);
-    setSignup({ name: "", mobile: "", address: "", password: "" });
+    setSignup({
+      registrationType: signup.registrationType,
+      name: "",
+      userId: "",
+      mobile: "",
+      address: "",
+      password: "",
+    });
     await loadAll();
   }
   async function submitClaim(e) {
@@ -1328,11 +1425,13 @@ export default function App() {
       c = getCategory(categoryId);
     if (!s || !c) return;
 
-    const baseUnitRate = unitRate(categoryId, s.fixed_difference),
-      marginValue = num(margin),
+    const isSalesCalculator = screen === "salesman" || user?.role === "salesman",
+      assignedSalesMargin = num(activeBusiness?.margin ?? user?.margin),
+      baseUnitRate = unitRate(categoryId, s.fixed_difference),
+      marginValue = isSalesCalculator ? assignedSalesMargin : num(margin),
       marginWithGst = round05(marginValue * 1.18),
       finalUnitRate = round05(baseUnitRate + marginWithGst),
-      q = Number(qty || 0),
+      q = isSalesCalculator ? 0 : Number(qty || 0),
       total = q === 0 ? finalUnitRate : round05(finalUnitRate * q);
 
     setCart([
@@ -1631,7 +1730,7 @@ export default function App() {
                 }
               />
             </div>
-            <button className="btn btn-primary full" style={{ marginTop: "12px" }}>Add to Market</button>
+            <button className="btn btn-primary full">Add to Market</button>
             <button
               type="button"
               className="asr-clear-all-quote-jsx-btn"
@@ -1929,6 +2028,8 @@ export default function App() {
   }
 
   function calculatorPage() {
+    const isSalesCalculator = screen === "salesman" || user?.role === "salesman";
+    const assignedSalesMargin = num(activeBusiness?.margin ?? user?.margin);
     const activeSizes = asrSortSizes(rateItems.filter((x) => x.category_id === categoryId)),
       sizePickerRows = activeSizes.filter((s) =>
         String(s.name || "").toLowerCase().includes(sizePickerQuery.trim().toLowerCase()),
@@ -2048,46 +2149,24 @@ export default function App() {
                 )}
               </div>
             )}
-<div className="small-card quantity-margin-card">
-  <div className="quantity-margin-grid">
-    <div className="field">
-      <label className="label">Step 3: Quantity kg</label>
-
-      <input
-        className="input quantity-input"
-        type="number"
-        inputMode="decimal"
-        min="0"
-        step="0.1"
-        value={qty}
-        placeholder="0"
-        onChange={(e) => setQty(e.target.value)}
-      />
-    </div>
-
-    <div className="field">
-      <label className="label">Margin ₹/kg</label>
-
-      <input
-        className="input margin-input"
-        type="number"
-        inputMode="decimal"
-        step="0.01"
-        value={margin}
-        placeholder="0"
-        onChange={(e) => {
-        const nextMargin = e.target.value;
-        setMargin(nextMargin);
-        try {
-          localStorage.setItem('asr_calculator_margin', nextMargin);
-        } catch (error) {
-          console.warn('Could not save calculator margin on this device.', error);
-        }
-      }}
-      />
-    </div>
-  </div>
-</div>
+{!isSalesCalculator && (
+              <div className="small-card quantity-margin-card">
+                <div className="quantity-margin-grid">
+                  <div className="field">
+                    <label className="label">Step 3: Quantity kg</label>
+                    <input className="input quantity-input" type="number" inputMode="decimal" min="0" step="0.1" value={qty} placeholder="0" onChange={(e) => setQty(e.target.value)} />
+                  </div>
+                  <div className="field">
+                    <label className="label">Margin ₹/kg</label>
+                    <input className="input margin-input" type="number" inputMode="decimal" step="0.01" value={margin} placeholder="0" onChange={(e) => {
+                      const nextMargin = e.target.value;
+                      setMargin(nextMargin);
+                      try { localStorage.setItem("asr_calculator_margin", nextMargin); } catch {}
+                    }} />
+                  </div>
+                </div>
+              </div>
+            )}
             <button
               className="btn btn-primary full"
               disabled={!categoryId || !sizeId || Number(qty || 0) < 0}            >
@@ -2229,6 +2308,90 @@ export default function App() {
               >
                 <Trash2 size={18} />
               </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  async function approveBusiness(row) {
+    const { error } = await supabase.rpc("approve_business", { p_business_id: row.id });
+    if (error) return setToast(error.message);
+    setBusinessUsers((prev) => prev.map((b) => b.id === row.id ? { ...b, status: "Approved" } : b));
+    setToast(`${row.business_name} approved.`);
+  }
+  async function rejectBusiness(row) {
+    const { error } = await supabase.rpc("reject_business", { p_business_id: row.id });
+    if (error) return setToast(error.message);
+    setBusinessUsers((prev) => prev.map((b) => b.id === row.id ? { ...b, status: "Rejected" } : b));
+    setToast(`${row.business_name} rejected.`);
+  }
+  async function saveBusinessMargin(row, value) {
+    const marginValue = Math.max(0, num(value));
+    const { error } = await supabase.rpc("set_business_margin", {
+      p_business_id: row.id,
+      p_margin: marginValue,
+    });
+    if (error) return setToast(error.message);
+    setBusinessUsers((prev) => prev.map((b) => b.id === row.id ? { ...b, margin: marginValue } : b));
+    setToast(`Margin saved for ${row.business_name}.`);
+  }
+  async function resetBusinessPassword(row, value) {
+    const nextPassword = String(value || "").trim();
+    if (nextPassword.length < 6) return setToast("Temporary password must have at least 6 characters.");
+    const { error } = await supabase.rpc("reset_business_password", {
+      p_business_id: row.id,
+      p_new_password: nextPassword,
+    });
+    if (error) return setToast(error.message);
+    setToast(`Temporary password updated for ${row.business_name}.`);
+  }
+  function salesmenPage() {
+    const pending = businessUsers.filter((b) => b.status === "Pending");
+    const approved = businessUsers.filter((b) => b.status === "Approved");
+    return (
+      <div className="grid salesman-admin-page">
+        <div className="area">
+          <h2 className="section-title"><UserPlus size={20} /> Pending Business Signups</h2>
+          {pending.length === 0 ? <div className="empty">No pending Business signups.</div> : pending.map((b) => (
+            <div className="signup-card business-signup-card" key={b.id}>
+              <div>
+                <b>{b.business_name}</b>
+                <p>User ID: <strong>{b.user_id}</strong></p>
+                <p>{b.mobile} • {b.address}</p>
+              </div>
+              <div className="signup-actions">
+                <button className="btn btn-success" onClick={() => approveBusiness(b)}>Approve</button>
+                <button className="btn btn-danger" onClick={() => rejectBusiness(b)}>Reject</button>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="area">
+          <h2 className="section-title"><Calculator size={20} /> Approved SalesMan</h2>
+          {approved.length === 0 ? <div className="empty">No approved Business accounts.</div> : approved.map((b) => (
+            <div className="salesman-manage-card" key={b.id}>
+              <div className="salesman-manage-head">
+                <div><b>{b.business_name}</b><p>User ID: <strong>{b.user_id}</strong> • {b.mobile}</p></div>
+                <span className="status-pill approved">Approved</span>
+              </div>
+              <div className="salesman-manage-grid">
+                <div className="field">
+                  <label className="label">Margin ₹/kg</label>
+                  <input className="input" type="number" min="0" step="0.01" defaultValue={b.margin || 0} onBlur={(e) => saveBusinessMargin(b, e.target.value)} />
+                </div>
+                <div className="field">
+                  <label className="label">Set Temporary Password</label>
+                  <input className="input" type="password" placeholder="Minimum 6 characters" onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      resetBusinessPassword(b, e.currentTarget.value);
+                      e.currentTarget.value = "";
+                    }
+                  }} />
+                  <small className="salesman-password-note">Existing passwords are protected and cannot be viewed. Press Enter to save a temporary password.</small>
+                </div>
+              </div>
             </div>
           ))}
         </div>
@@ -3101,6 +3264,7 @@ export default function App() {
       { id: "claims", label: "Claims", icon: <CheckCircle2 size={18} /> },
       { id: "redemptions", label: "Redeem", icon: <RefreshCw size={18} /> },
       { id: "signups", label: "Signups", icon: <UserPlus size={18} /> },
+      { id: "salesmen", label: "SalesMan", icon: <Calculator size={18} /> },
       { id: "items", label: "Items", icon: <PlusCircle size={18} /> },
       { id: "notifications", label: "Notify", icon: <Megaphone size={18} /> },
       { id: "alerts", label: "Alerts", icon: <Bell size={18} /> },
@@ -3113,7 +3277,6 @@ export default function App() {
     ],
     salesMenu = [
       { id: "calculator", label: "Calculator", icon: <Calculator size={18} /> },
-      { id: "alerts", label: "Alerts", icon: <Bell size={18} /> },
     ];
 
   function sideMenu(type) {
@@ -3347,7 +3510,6 @@ export default function App() {
       <div className="screen">
         <Header type={type} />
         <main className="main">
-          {isSales && ticker()}
           {isSales && calculatorPage()}
           {isAdmin &&
             ["calculator", "market", "daily"].includes(tab) &&
@@ -3360,9 +3522,10 @@ export default function App() {
           {isAdmin && tab === "claims" && claimsPage()}
           {isAdmin && tab === "redemptions" && redemptionsPage()}
           {isAdmin && tab === "signups" && signupsPage()}
+          {isAdmin && tab === "salesmen" && salesmenPage()}
           {isAdmin && tab === "items" && itemsPage()}
           {isAdmin && tab === "notifications" && notificationsPage()}
-          {tab === "alerts" && type !== "fabricator" && alertsPage()}
+          {tab === "alerts" && type === "admin" && alertsPage()}
           {isAdmin && tab === "history" && historyPage()}
           {!isAdmin && tab === "notifications" && notificationsPage()}
           {type === "fabricator" && !["notifications", "alerts"].includes(tab) && fabricatorHome()}
@@ -3404,9 +3567,6 @@ export default function App() {
               </div>
               <button className="btn btn-primary full">Sign In</button>
             </form>
-            <p className="muted" style={{ fontSize: 12 }}>
-              Salesman: sales / sales123
-            </p>
             <div style={{ height: 20 }} />
             <button
               className="btn btn-outline full"
@@ -3416,7 +3576,7 @@ export default function App() {
               }}
             >
               <UserPlus size={18} />
-              Register as Partner
+              Register Business / Partner
             </button>
           </div>
         </div>
@@ -3430,7 +3590,7 @@ export default function App() {
           <div className="login-head">
             <Logo />
             <div className="bar" />
-            <p className="subtitle">Fabricator Sign Up</p>
+            <p className="subtitle">Business / Partner Sign Up</p>
           </div>
           <div className="login-body">
             {signupOk ? (
@@ -3449,10 +3609,14 @@ export default function App() {
               </div>
             ) : (
               <form onSubmit={handleSignup}>
+                <div className="registration-type-switch">
+                  <button type="button" className={signup.registrationType === "business" ? "active" : ""} onClick={() => setSignup({ ...signup, registrationType: "business" })}>Business</button>
+                  <button type="button" className={signup.registrationType === "partner" ? "active" : ""} onClick={() => setSignup({ ...signup, registrationType: "partner" })}>Partner</button>
+                </div>
                 {signupError && <div className="error">{signupError}</div>}
                 <input
                   className="input"
-                  placeholder="Shop Name"
+                  placeholder={signup.registrationType === "business" ? "Business Name" : "Shop / Partner Name"}
                   value={signup.name}
                   onChange={(e) =>
                     setSignup({ ...signup, name: e.target.value })
@@ -3461,6 +3625,12 @@ export default function App() {
                 />
                 <br />
                 <br />
+                {signup.registrationType === "business" && (
+                  <>
+                    <input className="input" placeholder="Unique User ID" value={signup.userId} onChange={(e) => setSignup({ ...signup, userId: e.target.value })} required />
+                    <br /><br />
+                  </>
+                )}
                 <input
                   className="input"
                   placeholder="Mobile"
