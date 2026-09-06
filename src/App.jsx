@@ -1117,7 +1117,7 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
     setOrders((prev) => [order, ...prev]);
     const notificationPayload = {
       title: "New order placed",
-      message: `${firm.name} order for ${inr(total)} is pending approval.`,
+      message: `${firm.name} order is pending for approval.`,
       created_by: user?.name || "User",
       created_at: new Date().toISOString(),
     };
