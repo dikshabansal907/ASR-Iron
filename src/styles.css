@@ -1620,7 +1620,89 @@ textarea:focus {
     font-size: 10px;
     font-weight: 950;
     text-transform: uppercase;
-    margin-bottom: 7px
+    margin-bottom: 9px
+}
+
+.app-display-marquee {
+  width: auto;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  overflow: hidden;
+  margin-bottom: 9px;
+  padding: 7px 0;
+  border: 0;
+  border-radius: 0;
+  background: #0A3E7A;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+.app-display-marquee-track {
+  display: block;
+  width: max-content;
+  padding-left: 100vw;
+  animation: asr-display-marquee 14s linear infinite;
+}
+.app-display-marquee-track span {
+  display: inline-block;
+}
+@keyframes asr-display-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-100%); }
+}
+.notification-history-card .notification-target-pill {
+  margin-bottom: 9px !important;
+}
+.app-display-form { display: grid; gap: 10px; }
+.app-display-preview {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border: 1px solid #dbe4ef;
+  border-radius: 14px;
+  background: #f8fafc;
+}
+.opening-banner-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 700;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(15, 23, 42, .7);
+}
+.opening-banner-modal {
+  position: relative;
+  width: min(720px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, .3);
+}
+.opening-banner-modal img {
+  display: block;
+  width: 100%;
+  max-height: 90vh;
+  object-fit: contain;
+}
+.opening-banner-close {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  z-index: 1;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, .78);
+  color: #fff;
+  font-size: 25px;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .notification-delete {
@@ -5939,6 +6021,78 @@ form.small-card .input:focus {
 .market-rate-row .market-card-actions {
   align-self: start !important;
   padding-top: 2px !important;
+}
+.market-rate-row {
+  display: block !important;
+}
+.market-rate-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 25px;
+}
+.market-rate-summary .rate-change {
+  margin-top: 0;
+}
+.market-updated-row {
+  margin-top: 5px;
+}
+.market-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 29px;
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid #eef2f7;
+}
+.market-card-footer .market-card-actions {
+  width: 100%;
+  justify-content: space-between !important;
+}
+.market-card-footer .market-card-top-toggle {
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* Compact Daily Rate cards without changing their row structure. */
+.market-card {
+  padding: 8px !important;
+  border-radius: 13px;
+}
+.market-category-row .market-category-name-input {
+  min-height: 30px !important;
+  margin-bottom: 5px !important;
+  padding: 4px 8px !important;
+  font-size: 11px !important;
+}
+.market-rate-summary {
+  min-height: 21px;
+  gap: 6px;
+}
+.market-card .rate-value {
+  font-size: 17px;
+}
+.market-updated-row {
+  margin-top: 3px;
+}
+.market-card-footer {
+  min-height: 25px;
+  margin-top: 5px;
+  padding-top: 5px;
+}
+.market-update-grid {
+  margin-top: 7px !important;
+  padding-top: 7px !important;
+  gap: 6px !important;
+}
+.market-update-grid .input {
+  min-height: 31px !important;
+  padding: 5px 7px !important;
+  font-size: 12px;
 }
 .market-rate-row .rate-change {
   width: fit-content;

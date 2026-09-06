@@ -25,6 +25,7 @@ import {
   ChevronDown,
   Printer,
   ClipboardList,
+  Image as ImageIcon,
 } from "lucide-react";
 import { supabase } from "./lib/supabaseClient";
 import {
@@ -449,6 +450,12 @@ export default function App() {
       title: "",
       message: "",
     });
+  const [displayLine, setDisplayLine] = useState("Welcome to ASR Iron"),
+    [displayBannerUrl, setDisplayBannerUrl] = useState(""),
+    [displayBannerDismissed, setDisplayBannerDismissed] = useState(false),
+    [displayLineDraft, setDisplayLineDraft] = useState("Welcome to ASR Iron"),
+    [displayBannerFile, setDisplayBannerFile] = useState(null),
+    [displaySaving, setDisplaySaving] = useState(false);
   const [hiddenNotificationIds, setHiddenNotificationIds] = useState(() => {
     try {
       return JSON.parse(
@@ -579,6 +586,18 @@ export default function App() {
     if (!firmsResult.error) setOrderFirms(firmsResult.data || []);
     if (!ordersResult.error) setOrders(ordersResult.data || []);
   }
+  async function loadDisplaySettings() {
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from("app_display_settings")
+      .select("top_line, banner_url")
+      .eq("id", true)
+      .maybeSingle();
+    if (error || !data) return;
+    setDisplayLine(data.top_line || "");
+    setDisplayLineDraft(data.top_line || "");
+    setDisplayBannerUrl(data.banner_url || "");
+  }
   async function saveNotificationLocal(payload) {
     const existing = JSON.parse(
       localStorage.getItem("asr_notifications") || "[]",
@@ -664,6 +683,7 @@ export default function App() {
     }
     await loadNotifications();
     await loadOrderData();
+    await loadDisplaySettings();
     setLoading(false);
   }
   useEffect(() => {
@@ -1845,26 +1865,17 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
                   />
                 </div>
                 <div className="market-rate-row">
-                  <div className="market-card-content">
+                  <div className="market-rate-summary">
                     <div className="rate-value">{inr(row.daily_rate)}</div>
                     <div className={`rate-change ${d.cls}`}>
                       {d.icon}
                       {d.txt}
                     </div>
-                    <div className="rate-time">
-                      Last updated {ago(row.updated_at || row.created_at)}
-                    </div>
                   </div>
-                  <div className="market-card-actions">
-                    {dailyRateItemTopToggle(row)}
-                    <button
-                      className="market-delete-btn"
-                      onClick={() => deleteSegment(row)}
-                      aria-label={`Delete ${row.name} category`}
-                      title="Delete category"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+                </div>
+                <div className="market-updated-row">
+                  <div className="rate-time">
+                    Last updated {ago(row.updated_at || row.created_at)}
                   </div>
                 </div>
                 <div className="market-update-grid">
@@ -1889,6 +1900,19 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
                         updateMarketRate(row, row.daily_rate, e.target.value)
                       }
                     />
+                  </div>
+                </div>
+                <div className="market-card-footer">
+                  <div className="market-card-actions">
+                    {dailyRateItemTopToggle(row)}
+                    <button
+                      className="market-delete-btn"
+                      onClick={() => deleteSegment(row)}
+                      aria-label={`Delete ${row.name} category`}
+                      title="Delete category"
+                    >
+                      <Trash2 size={16} />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -3254,6 +3278,96 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
       </div>
     );
   }
+  async function saveDisplaySettings(e) {
+    e.preventDefault();
+    if (!supabase) return setToast("Supabase is not connected.");
+    setDisplaySaving(true);
+    try {
+      let bannerUrl = displayBannerUrl;
+      if (displayBannerFile) {
+        const extension = displayBannerFile.name.split(".").pop() || "jpg";
+        const filePath = `opening-banner-${Date.now()}.${extension}`;
+        const { error: uploadError } = await supabase.storage
+          .from("app-media")
+          .upload(filePath, displayBannerFile, { upsert: true, contentType: displayBannerFile.type });
+        if (uploadError) throw uploadError;
+        const { data } = supabase.storage.from("app-media").getPublicUrl(filePath);
+        bannerUrl = data.publicUrl;
+      }
+      const { error } = await supabase
+        .from("app_display_settings")
+        .upsert({ id: true, top_line: displayLineDraft.trim(), banner_url: bannerUrl || null, updated_at: new Date().toISOString() });
+      if (error) throw error;
+      setDisplayLine(displayLineDraft.trim());
+      setDisplayBannerUrl(bannerUrl);
+      setDisplayBannerFile(null);
+      setToast("App display settings saved.");
+    } catch (error) {
+      setToast(error.message || "Could not save app display settings.");
+    } finally {
+      setDisplaySaving(false);
+    }
+  }
+  async function removeDisplayBanner() {
+    if (!supabase) return setToast("Supabase is not connected.");
+    setDisplaySaving(true);
+    try {
+      if (displayBannerUrl.includes("/storage/v1/object/public/app-media/")) {
+        const filePath = decodeURIComponent(
+          displayBannerUrl.split("/storage/v1/object/public/app-media/")[1],
+        );
+        await supabase.storage.from("app-media").remove([filePath]);
+      }
+      const { error } = await supabase
+        .from("app_display_settings")
+        .upsert({ id: true, banner_url: null, updated_at: new Date().toISOString() });
+      if (error) throw error;
+      setDisplayBannerUrl("");
+      setDisplayBannerFile(null);
+      setDisplayBannerDismissed(true);
+      setToast("Opening image removed.");
+    } catch (error) {
+      setToast(error.message || "Could not remove opening image.");
+    } finally {
+      setDisplaySaving(false);
+    }
+  }
+  async function removeDisplayLine() {
+    if (!supabase) return setToast("Supabase is not connected.");
+    const { error } = await supabase
+      .from("app_display_settings")
+      .upsert({ id: true, top_line: "", updated_at: new Date().toISOString() });
+    if (error) return setToast(error.message || "Could not remove top line.");
+    setDisplayLine("");
+    setDisplayLineDraft("");
+    setToast("Top line removed.");
+  }
+  function appDisplayPage() {
+    return (
+      <div className="area app-display-page">
+        <h2 className="section-title">App Display</h2>
+        <p className="section-note">Set the line shown at the top and an optional opening banner.</p>
+        <form onSubmit={saveDisplaySettings} className="app-display-form">
+          <div className="field">
+            <label className="label">Top line</label>
+            <input className="input" value={displayLineDraft} onChange={(e) => setDisplayLineDraft(e.target.value)} placeholder="Welcome to ASR Iron" />
+            <button type="button" className="btn btn-soft" onClick={removeDisplayLine}>Remove top line</button>
+          </div>
+          <div className="field">
+            <label className="label">Opening banner or photo</label>
+            <input className="input" type="file" accept="image/*" onChange={(e) => setDisplayBannerFile(e.target.files?.[0] || null)} />
+          </div>
+          {displayBannerUrl && (
+            <>
+              <img className="app-display-preview" src={displayBannerUrl} alt="Current opening banner" />
+              <button type="button" className="btn btn-soft" onClick={removeDisplayBanner}>Remove opening image</button>
+            </>
+          )}
+          <button className="btn btn-primary full" disabled={displaySaving}>{displaySaving ? "Saving..." : "Save App Display"}</button>
+        </form>
+      </div>
+    );
+  }
   function notificationsPage() {
     return (
       <div className="grid">
@@ -3440,6 +3554,7 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
       { id: "notifications", label: "Notify", icon: <Megaphone size={18} /> },
       { id: "alerts", label: "Alerts", icon: <Bell size={18} /> },
       { id: "history", label: "History", icon: <History size={18} /> },
+      { id: "app-display", label: "App Display", icon: <ImageIcon size={18} /> },
     ],
     fabMenu = [
       { id: "apply", label: "Apply", icon: <PlusCircle size={18} /> },
@@ -3682,6 +3797,13 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
         <main className="main">
           {isSales && tab === "calculator" && calculatorPage()}
           {isSales && tab === "orders" && orderPage()}
+          {displayLine && ["admin", "salesman"].includes(type) && (
+            <div className="app-display-marquee" aria-label={displayLine}>
+              <div className="app-display-marquee-track">
+                <span>{displayLine}</span>
+              </div>
+            </div>
+          )}
           {isAdmin &&
             ["calculator", "market", "daily"].includes(tab) &&
             ticker()}
@@ -3697,6 +3819,7 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
           {isAdmin && tab === "salesmen" && salesmenPage()}
           {isAdmin && tab === "items" && itemsPage()}
           {isAdmin && tab === "notifications" && notificationsPage()}
+              {isAdmin && tab === "app-display" && appDisplayPage()}
           {tab === "alerts" && type === "admin" && alertsPage()}
           {isAdmin && tab === "history" && historyPage()}
           {!isAdmin && tab === "notifications" && notificationsPage()}
@@ -3899,6 +4022,14 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
             <h2>New order placed</h2>
             <p>{orderAlert.message}</p>
             <button className="btn btn-primary full" onClick={() => setOrderAlert(null)}>OK, seen</button>
+          </div>
+        </div>
+      )}
+      {displayBannerUrl && !displayBannerDismissed && (
+        <div className="opening-banner-backdrop">
+          <div className="opening-banner-modal">
+            <button className="opening-banner-close" onClick={() => setDisplayBannerDismissed(true)} aria-label="Close banner">×</button>
+            <img src={displayBannerUrl} alt="ASR Iron announcement" />
           </div>
         </div>
       )}
