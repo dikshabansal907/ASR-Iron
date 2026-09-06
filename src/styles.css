@@ -5874,6 +5874,15 @@ form.small-card .input:focus {
   display: flex !important;
   overflow-x: auto !important;
   white-space: nowrap;
+  justify-content: center;
+}
+.bottom-nav-scroll > button {
+  flex: 0 0 auto;
+}
+@media (max-width: 720px) {
+  .bottom-nav-scroll {
+    justify-content: flex-start;
+  }
 }
 
 /* Final compact Daily Rate action sizing. */
