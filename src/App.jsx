@@ -104,7 +104,7 @@ export default function App() {
   const clearAllQuotes = () => {
     setCart([]);
     setQuoteText("");
-    setQuoteEdited(false);
+    setQuoteEdited(true);
     document.querySelectorAll("textarea").forEach((ta) => {
       const meta = [
         ta.className || "",
@@ -1109,7 +1109,10 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
       sendSystemPushNotification({ target: "admin", title: notificationPayload.title, message: notificationPayload.message }),
       sendSystemPushNotification({ target: "salesman", title: notificationPayload.title, message: notificationPayload.message }),
     ]);
-    setOrderFirmId(firm.id);
+    setCart([]);
+    setQuoteText("");
+    setQuoteEdited(false);
+    setOrderFirmId("");
     setNewFirmName("");
     setToast("Order placed and sent for approval.");
   }
@@ -1131,7 +1134,6 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
       (order) => orderStatusFilter === "all" || order.status === orderStatusFilter,
     );
     const selectedFirm = orderFirms.find((firm) => firm.id === orderFirmId);
-    const currentQuote = getCurrentQuoteText();
     return (
       <div className="orders-page">
         <div className="order-compose area">
@@ -1162,7 +1164,7 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
               </div>
               <textarea
                 className="input order-quote-editor"
-                value={quoteText || currentQuote}
+                value={quoteText}
                 onChange={(e) => {
                   setQuoteText(e.target.value);
                   setQuoteEdited(true);
