@@ -1,8 +1,6 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-
-// ASR_NATURAL_NUMERIC_SIZE_SORT: Sort size/spec names by their leading numeric values, then full text.
-Menu,
+  Menu,
   X,
   Trash2,
   Calculator,
@@ -16,7 +14,6 @@ Menu,
   Copy,
   MessageCircle,
   Send,
-  Mail,
   TrendingUp,
   TrendingDown,
   MinusCircle,
@@ -25,65 +22,27 @@ Menu,
   Bell,
   Megaphone,
   Search,
+  ChevronDown,
+  Printer,
+  ClipboardList,
 } from "lucide-react";
 import { supabase } from "./lib/supabaseClient";
 import {
   enablePushForUser,
   sendSystemPushNotification,
-  isPushSupported,
   getPushPermission,
 } from "./pushNotifications";
+import {
+  asrNaturalSizeCompare,
+  asrSortSizes,
+  num,
+  round05,
+  inr,
+  today,
+  ago,
+} from "./utils";
 
-// ASR_SORTING_ONLY_SAFE: natural numeric sorting for Sizes and Calculator size dropdowns.
-function asrNaturalSizeCompare(a, b) {
-  const get = (item) => String(item?.name ?? item ?? '').trim().toLowerCase();
-  const ax = get(a);
-  const bx = get(b);
-
-  const aStartsNumber = /^\s*\d/.test(ax);
-  const bStartsNumber = /^\s*\d/.test(bx);
-  if (aStartsNumber && !bStartsNumber) return -1;
-  if (!aStartsNumber && bStartsNumber) return 1;
-
-  const nums = (value) => (value.match(/\d+(?:\.\d+)?/g) || []).map(Number);
-  const an = nums(ax);
-  const bn = nums(bx);
-  const max = Math.max(an.length, bn.length);
-
-  for (let i = 0; i < max; i += 1) {
-    if (an[i] == null && bn[i] != null) return -1;
-    if (an[i] != null && bn[i] == null) return 1;
-    if (an[i] !== bn[i]) return an[i] - bn[i];
-  }
-
-  return ax.localeCompare(bx, undefined, { numeric: true, sensitivity: 'base' });
-}
-
-function asrSortSizes(list) {
-  return [...(list || [])].sort((a, b) => asrNaturalSizeCompare(a, b));
-}
-
-// ASR_SAFE_NATURAL_SIZE_SORT: natural number-aware order for size/spec options.
-// ASR_NATURAL_NUMERIC_SIZE_SORT: Sort size/spec names by numeric chunks first, then text.
-const num = (v) => Number(v || 0),
-  round05 = (v) => Math.round(num(v) * 20) / 20,
-  inr = (v) =>
-    `₹${round05(v).toLocaleString("en-IN", { minimumFractionDigits: round05(v) % 1 ? 2 : 0, maximumFractionDigits: 2 })}`;
-const today = () => {
-  const d = new Date();
-  return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
-};
-function ago(v) {
-  if (!v) return "not updated";
-  const ms = Date.now() - new Date(v).getTime();
-  if (ms < 6e4) return "just now";
-  const m = Math.floor(ms / 6e4);
-  if (m < 60) return `${m} min ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h} hour${h > 1 ? "s" : ""} ago`;
-  const d = Math.floor(h / 24);
-  return `${d} day${d > 1 ? "s" : ""} ago`;
-}
+// Build the up / down / flat rate-change indicator shown against a market row.
 function delta(r) {
   const d = Number((num(r.daily_rate) - num(r.previous_daily_rate)).toFixed(2));
   if (d > 0)
@@ -96,6 +55,7 @@ function delta(r) {
     };
   return { cls: "flat", icon: <MinusCircle size={12} />, txt: "No change" };
 }
+// ASR logo image. `dark` uses the white variant; `loading` adds the pulse animation.
 function Logo({ dark = false, loading = false }) {
   return (
     <img
@@ -107,7 +67,9 @@ function Logo({ dark = false, loading = false }) {
   );
 }
 export default function App() {
-/* ASR_SCROLL_UNLOCK_SAFETY_START */
+  /* ASR_SCROLL_UNLOCK_SAFETY_START */
+  // On mobile browsers the add-item modal locks page scrolling; make sure the
+  // lock is always released when the tab/app regains focus or becomes visible.
   useEffect(() => {
     const unlockPage = () => {
       document.documentElement.classList.remove('asr-add-item-lock');
@@ -136,59 +98,13 @@ export default function App() {
   }, []);
   /* ASR_SCROLL_UNLOCK_SAFETY_END */
 
-// ASR_FORCE_VISIBLE_CLEAR_BUTTON_V4: force a visible delete-all button beside Reset, without MutationObserver loops.
-  const asrClearEveryQuoteState = () => {
-    try {
-      if (typeof setQuoteItems === "function") setQuoteItems([]);
-    } catch {}
-    try {
-      if (typeof setCalculatorCart === "function") setCalculatorCart([]);
-    } catch {}
-    try {
-      if (typeof setCart === "function") setCart([]);
-    } catch {}
-    try {
-      if (typeof setQuoteRows === "function") setQuoteRows([]);
-    } catch {}
-    try {
-      if (typeof setProposalRows === "function") setProposalRows([]);
-    } catch {}
-    try {
-      if (typeof setInvoiceRows === "function") setInvoiceRows([]);
-    } catch {}
-    try {
-      if (typeof setEstimateItems === "function") setEstimateItems([]);
-    } catch {}
-    try {
-      if (typeof setSummaryItems === "function") setSummaryItems([]);
-    } catch {}
-    try {
-      if (typeof setLineItems === "function") setLineItems([]);
-    } catch {}
-    try {
-      if (typeof setSelectedItems === "function") setSelectedItems([]);
-    } catch {}
-
-    try {
-      if (typeof setQuoteText === "function") setQuoteText("");
-    } catch {}
-    try {
-      if (typeof setEditedQuoteText === "function") setEditedQuoteText("");
-    } catch {}
-    try {
-      if (typeof setQuoteManualText === "function") setQuoteManualText("");
-    } catch {}
-    try {
-      if (typeof setEditableQuoteText === "function") setEditableQuoteText("");
-    } catch {}
-    try {
-      if (typeof setShareText === "function") setShareText("");
-    } catch {}
-    try {
-      if (typeof setQuoteEdited === "function") setQuoteEdited(false);
-    } catch {}
-
-    // Also clear the actual textarea immediately for visual feedback.
+  // Clear every quotation item and reset the editable quote text.
+  // Only the state setters that actually exist in this component are used; the
+  // textarea sweep gives instant visual feedback for the controlled quote field.
+  const clearAllQuotes = () => {
+    setCart([]);
+    setQuoteText("");
+    setQuoteEdited(false);
     document.querySelectorAll("textarea").forEach((ta) => {
       const meta = [
         ta.className || "",
@@ -210,41 +126,22 @@ export default function App() {
         ta.dispatchEvent(new Event("input", { bubbles: true }));
       }
     });
-
-    try {
-      if (typeof setToast === "function") setToast("Quotation cleared.");
-    } catch {}
+    setToast("Quotation cleared.");
   };
 
-  const asrConfirmClearEveryQuoteState = () => {
-    const message = "Delete all added items?";
-    const run = () => asrClearEveryQuoteState();
-    try {
-      if (typeof askDelete === "function") return askDelete(message, run);
-    } catch {}
-    try {
-      if (typeof askConfirmation === "function")
-        return askConfirmation(message, run);
-    } catch {}
-    try {
-      if (typeof setConfirmBox === "function")
-        return setConfirmBox({ title: message, onYes: run });
-    } catch {}
-    try {
-      if (typeof setConfirmModal === "function")
-        return setConfirmModal({ isOpen: true, message, onConfirm: run });
-    } catch {}
-    if (window.confirm("Are you sure you want to delete all the added items?"))
-      run();
-  };
+  // Ask for confirmation before clearing all quotation items.
+  const asrAskClearAllQuotes = () =>
+    askDelete("Delete all added items?", clearAllQuotes);
 
+  // Inject a visible "delete all" trash button next to the Reset/Share buttons.
+  // The share panel is rendered without this button in JSX, so it is added here.
   useEffect(() => {
     let stopped = false;
     const addButton = () => {
       if (stopped || document.querySelector(".asr-force-clear-btn")) return;
 
       const buttons = Array.from(document.querySelectorAll("button"));
-      // Prefer the Reset button, but fall back to the last share/action row button if needed.
+      // Prefer the Reset button, but fall back to a share/copy action button.
       let anchor = buttons.find((btn) => {
         const text = (btn.textContent || "").toLowerCase().trim();
         const title = (btn.getAttribute("title") || "").toLowerCase();
@@ -274,7 +171,7 @@ export default function App() {
       btn.title = "Delete all added items";
       btn.setAttribute("aria-label", "Delete all added items");
       btn.innerHTML = '<span aria-hidden="true">🗑</span>';
-      btn.addEventListener("click", asrConfirmClearEveryQuoteState);
+      btn.addEventListener("click", asrAskClearAllQuotes);
       anchor.insertAdjacentElement("afterend", btn);
     };
 
@@ -285,85 +182,6 @@ export default function App() {
       clearInterval(timer);
     };
   }, []);
-  // ASR_FORCE_VISIBLE_CLEAR_BUTTON_V4_END
-
-  function asrClearAllQuotesNow() {
-    try {
-      if (typeof setQuoteItems === "function") setQuoteItems([]);
-    } catch {}
-    try {
-      if (typeof setCalculatorCart === "function") setCalculatorCart([]);
-    } catch {}
-    try {
-      if (typeof setCart === "function") setCart([]);
-    } catch {}
-    try {
-      if (typeof setQuoteRows === "function") setQuoteRows([]);
-    } catch {}
-    try {
-      if (typeof setProposalRows === "function") setProposalRows([]);
-    } catch {}
-    try {
-      if (typeof setInvoiceRows === "function") setInvoiceRows([]);
-    } catch {}
-    try {
-      if (typeof setEstimateItems === "function") setEstimateItems([]);
-    } catch {}
-    try {
-      if (typeof setSummaryItems === "function") setSummaryItems([]);
-    } catch {}
-    try {
-      if (typeof setLineItems === "function") setLineItems([]);
-    } catch {}
-    try {
-      if (typeof setSelectedItems === "function") setSelectedItems([]);
-    } catch {}
-
-    try {
-      if (typeof setQuoteText === "function") setQuoteText("");
-    } catch {}
-    try {
-      if (typeof setEditedQuoteText === "function") setEditedQuoteText("");
-    } catch {}
-    try {
-      if (typeof setQuoteManualText === "function") setQuoteManualText("");
-    } catch {}
-    try {
-      if (typeof setEditableQuoteText === "function") setEditableQuoteText("");
-    } catch {}
-    try {
-      if (typeof setShareText === "function") setShareText("");
-    } catch {}
-    try {
-      if (typeof setQuoteEdited === "function") setQuoteEdited(false);
-    } catch {}
-
-    try {
-      if (typeof setToast === "function") setToast("Quotation cleared.");
-    } catch {}
-  }
-
-  function asrAskClearAllQuotes() {
-    const message = "Delete all added items?";
-    const run = () => asrClearAllQuotesNow();
-    try {
-      if (typeof askDelete === "function") return askDelete(message, run);
-    } catch {}
-    try {
-      if (typeof askConfirmation === "function")
-        return askConfirmation(message, run);
-    } catch {}
-    try {
-      if (typeof setConfirmBox === "function")
-        return setConfirmBox({ title: message, onYes: run });
-    } catch {}
-    try {
-      if (typeof setConfirmModal === "function")
-        return setConfirmModal({ isOpen: true, message, onConfirm: run });
-    } catch {}
-    if (window.confirm("Are you sure you want to delete all the added items?"))
-      run();
-  }
 
   // ASR_QUANTITY_ZERO_RUNTIME_FIX_V2: show quantity 0 as grey and let typing replace it directly.
   useEffect(() => {
@@ -551,9 +369,11 @@ export default function App() {
     [categories, setCategories] = useState([]),
     [rateItems, setRateItems] = useState([]),
     [loading, setLoading] = useState(true),
+    [pullRefreshDistance, setPullRefreshDistance] = useState(0),
     [toast, setToast] = useState(""),
     [confirmBox, setConfirmBox] = useState(null),
     [sideOpen, setSideOpen] = useState(false);
+  const pullRefreshDistanceRef = useRef(0);
   // 2) Add this state inside App():
   const [pushPermission, setPushPermission] = useState(getPushPermission());
 
@@ -581,6 +401,7 @@ export default function App() {
     [categoryId, setCategoryId] = useState(""),
     [sizeId, setSizeId] = useState(""),
     [qty, setQty] = useState(""),
+    [qtyUnit, setQtyUnit] = useState("kg"),
     [margin, setMargin] = useState(() => {
     try {
       return localStorage.getItem('asr_calculator_margin') ?? '';
@@ -591,6 +412,12 @@ export default function App() {
     [cart, setCart] = useState([]),
     [quoteText, setQuoteText] = useState(""),
     [quoteEdited, setQuoteEdited] = useState(false);
+  const [orderFirms, setOrderFirms] = useState([]),
+    [orders, setOrders] = useState([]),
+    [orderFirmId, setOrderFirmId] = useState(""),
+    [newFirmName, setNewFirmName] = useState(""),
+    [orderStatusFilter, setOrderStatusFilter] = useState("Pending"),
+    [orderAlert, setOrderAlert] = useState(null);
   const [sizePickerOpen, setSizePickerOpen] = useState(false),
     [sizePickerQuery, setSizePickerQuery] = useState("");
   const [newSegment, setNewSegment] = useState({
@@ -612,6 +439,9 @@ export default function App() {
     [redeemNarrations, setRedeemNarrations] = useState({}),
     [siteName, setSiteName] = useState(""),
     [claimOk, setClaimOk] = useState(false);
+  // Which approved fabricator's history panel is currently expanded (admin view).
+  const [openFabId, setOpenFabId] = useState(null),
+    [fabSearch, setFabSearch] = useState("");
   const [notifications, setNotifications] = useState([]),
     [newNotification, setNewNotification] = useState({
       target: "all",
@@ -737,6 +567,18 @@ export default function App() {
       setNotifications([]);
     }
   }
+  async function loadOrderData() {
+    if (!supabase) return;
+    const [firmsResult, ordersResult] = await Promise.all([
+      supabase.from("order_firms").select("*").order("name"),
+      supabase
+        .from("orders")
+        .select("*")
+        .order("order_datetime", { ascending: false }),
+    ]);
+    if (!firmsResult.error) setOrderFirms(firmsResult.data || []);
+    if (!ordersResult.error) setOrders(ordersResult.data || []);
+  }
   async function saveNotificationLocal(payload) {
     const existing = JSON.parse(
       localStorage.getItem("asr_notifications") || "[]",
@@ -821,6 +663,7 @@ export default function App() {
       if (!categoryId && c.data?.length) setCategoryId(c.data[0].id);
     }
     await loadNotifications();
+    await loadOrderData();
     setLoading(false);
   }
   useEffect(() => {
@@ -850,6 +693,54 @@ export default function App() {
       );
   }, []);
   useEffect(() => {
+    let startY = 0;
+    let startX = 0;
+    let tracking = false;
+
+    const onTouchStart = (event) => {
+      const target = event.target;
+      if (target.closest("input, textarea, select, button")) return;
+      const scrollTop = document.scrollingElement?.scrollTop || window.scrollY;
+      if (scrollTop > 0) return;
+      startY = event.touches[0]?.clientY || 0;
+      startX = event.touches[0]?.clientX || 0;
+      tracking = true;
+    };
+
+    const onTouchMove = (event) => {
+      if (!tracking) return;
+      const touch = event.touches[0];
+      const distance = touch.clientY - startY;
+      const horizontalDistance = Math.abs(touch.clientX - startX);
+      if (distance <= 0 || horizontalDistance > distance) {
+        pullRefreshDistanceRef.current = 0;
+        setPullRefreshDistance(0);
+        return;
+      }
+      const nextDistance = Math.min(distance, 92);
+      pullRefreshDistanceRef.current = nextDistance;
+      setPullRefreshDistance(nextDistance);
+    };
+
+    const onTouchEnd = () => {
+      if (!tracking) return;
+      tracking = false;
+      const shouldRefresh = pullRefreshDistanceRef.current >= 70;
+      pullRefreshDistanceRef.current = 0;
+      setPullRefreshDistance(0);
+      if (shouldRefresh) loadAll();
+    };
+
+    document.addEventListener("touchstart", onTouchStart, { passive: true });
+    document.addEventListener("touchmove", onTouchMove, { passive: true });
+    document.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => {
+      document.removeEventListener("touchstart", onTouchStart);
+      document.removeEventListener("touchmove", onTouchMove);
+      document.removeEventListener("touchend", onTouchEnd);
+    };
+  }, []);
+  useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(""), 3500);
     return () => clearTimeout(t);
@@ -867,14 +758,65 @@ export default function App() {
       seen = [];
     }
     const seenSet = new Set(seen);
-    const next = visibleNotifications.find(
+    // Notifications are sorted newest-first, so the first unseen one is the latest.
+    const newest = visibleNotifications.find(
       (n) => !seenSet.has(notificationKey(n)),
     );
-    if (!next) return;
-    const updated = [notificationKey(next), ...seen].slice(0, 200);
+    if (!newest) return;
+    // Mark every currently visible notification as seen in one pass so older
+    // ones don't trickle out one-by-one on each app reopen.
+    const updated = Array.from(
+      new Set([...visibleNotifications.map(notificationKey), ...seen]),
+    ).slice(0, 200);
     localStorage.setItem(seenKey, JSON.stringify(updated));
-    setToast(`🔔 ${next.title}: ${next.message}`);
+    if (String(newest.title).toLowerCase().includes("new order")) {
+      setOrderAlert(newest);
+    } else {
+      setToast(`🔔 ${newest.title}: ${newest.message}`);
+    }
   }, [visibleNotifications, user]);
+  useEffect(() => {
+    if (!orderAlert) return;
+    let audioContext;
+    const ring = () => {
+      try {
+        audioContext ||= new AudioContext();
+        const oscillator = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        oscillator.frequency.value = 880;
+        gain.gain.setValueAtTime(0.0001, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.12, audioContext.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.32);
+        oscillator.connect(gain).connect(audioContext.destination);
+        oscillator.start();
+        oscillator.stop(audioContext.currentTime + 0.34);
+      } catch {}
+    };
+    ring();
+    const timer = setInterval(ring, 1400);
+    return () => {
+      clearInterval(timer);
+      audioContext?.close().catch(() => {});
+    };
+  }, [orderAlert]);
+  // Prompt to enable phone alerts each time the app opens while they are off.
+  useEffect(() => {
+    if (!user) return;
+    const permission =
+      typeof Notification !== "undefined"
+        ? Notification.permission
+        : pushPermission;
+    const alertsOn = alertsPreference !== "off" && permission === "granted";
+    if (alertsOn) return;
+    const t = setTimeout(() => setAlertPromptOpen(true), 800);
+    return () => clearTimeout(t);
+  }, [user?.id]);
+  useEffect(() => {
+    const role = String(user?.role || "").toLowerCase();
+    if (!user || !["admin", "salesman"].includes(role)) return;
+    const timer = setInterval(loadNotifications, 15000);
+    return () => clearInterval(timer);
+  }, [user?.id, user?.role]);
   const getCategory = (id) => categories.find((c) => c.id === id),
     unitRate = (catId, diff) => {
       const c = getCategory(catId) || {};
@@ -1113,6 +1055,146 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
     } catch (err) {
       console.warn("Push send failed", err);
     }
+  }
+  async function placeOrder(e) {
+    e.preventDefault();
+    const firmName = newFirmName.trim() || orderFirms.find((firm) => firm.id === orderFirmId)?.name;
+    if (!firmName) return setToast("Select or enter a firm name.");
+    if (!cart.length) return setToast("Add at least one calculator item before placing an order.");
+    if (!supabase) return setToast("Supabase is not connected. Cannot place order.");
+
+    let firm = orderFirms.find((row) => row.id === orderFirmId);
+    if (!firm || firm.name.toLowerCase() !== firmName.toLowerCase()) {
+      const { data, error } = await supabase
+        .from("order_firms")
+        .upsert({ name: firmName, created_by: user?.name || user?.id || "user" }, { onConflict: "name" })
+        .select()
+        .single();
+      if (error) return setToast(error.message || "Could not save firm name.");
+      firm = data;
+      setOrderFirms((prev) => [firm, ...prev.filter((row) => row.id !== firm.id)].sort((a, b) => a.name.localeCompare(b.name)));
+    }
+
+    const total = cart.reduce((sum, item) => sum + num(item.total), 0);
+    const { data: order, error: orderError } = await supabase
+      .from("orders")
+      .insert({
+        firm_id: firm.id,
+        firm_name: firm.name,
+        placed_by_id: String(user?.id || ""),
+        placed_by_name: user?.name || user?.userId || "User",
+        placed_by_role: String(user?.role || "salesman").toLowerCase(),
+        order_datetime: new Date().toISOString(),
+        status: "Pending",
+        total,
+        items: cart,
+        quote_text: getCurrentQuoteText(),
+      })
+      .select()
+      .single();
+    if (orderError) return setToast(orderError.message || "Could not place order.");
+
+    setOrders((prev) => [order, ...prev]);
+    const notificationPayload = {
+      title: "New order placed",
+      message: `${firm.name} order for ${inr(total)} is pending approval.`,
+      created_by: user?.name || "User",
+      created_at: new Date().toISOString(),
+    };
+    await supabase.from("notifications").insert([
+      { ...notificationPayload, target: "admin" },
+      { ...notificationPayload, target: "salesman" },
+    ]);
+    await Promise.all([
+      sendSystemPushNotification({ target: "admin", title: notificationPayload.title, message: notificationPayload.message }),
+      sendSystemPushNotification({ target: "salesman", title: notificationPayload.title, message: notificationPayload.message }),
+    ]);
+    setOrderFirmId(firm.id);
+    setNewFirmName("");
+    setToast("Order placed and sent for approval.");
+  }
+  async function updateOrderStatus(order, status) {
+    if (!supabase) return;
+    const { error } = await supabase
+      .from("orders")
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq("id", order.id);
+    if (error) return setToast(error.message || "Could not update order status.");
+    setOrders((prev) => prev.map((row) => (row.id === order.id ? { ...row, status } : row)));
+    setToast(`Order marked ${status.toLowerCase()}.`);
+  }
+  function orderInvoiceItems(order) {
+    return Array.isArray(order?.items) ? order.items : [];
+  }
+  function orderPage() {
+    const filteredOrders = orders.filter(
+      (order) => orderStatusFilter === "all" || order.status === orderStatusFilter,
+    );
+    const selectedFirm = orderFirms.find((firm) => firm.id === orderFirmId);
+    const currentQuote = getCurrentQuoteText();
+    return (
+      <div className="orders-page">
+        <div className="order-compose area">
+          <div className="order-page-heading">
+            <div>
+              <h2 className="section-title">Place Order</h2>
+              <p className="section-note">Create an order from the items in the calculator.</p>
+            </div>
+          </div>
+          <form onSubmit={placeOrder}>
+            <div className="order-form-grid">
+              <div className="field">
+                <label className="label">Firm</label>
+                <select className="input" value={orderFirmId} onChange={(e) => setOrderFirmId(e.target.value)}>
+                  <option value="">Select saved firm</option>
+                  {orderFirms.map((firm) => <option key={firm.id} value={firm.id}>{firm.name}</option>)}
+                </select>
+              </div>
+              <div className="field">
+                <label className="label">New firm name</label>
+                <input className="input" value={newFirmName} onChange={(e) => setNewFirmName(e.target.value)} placeholder="Enter to save a new firm" />
+              </div>
+            </div>
+            {selectedFirm && !newFirmName && <div className="order-selected-firm">Selected firm: <b>{selectedFirm.name}</b></div>}
+            <div className="order-invoice">
+              <div className="order-invoice-head">
+                <div><span>Invoice preview</span><b>{newFirmName.trim() || selectedFirm?.name || "Select a firm"}</b></div>
+              </div>
+              <textarea
+                className="input order-quote-editor"
+                value={quoteText || currentQuote}
+                onChange={(e) => {
+                  setQuoteText(e.target.value);
+                  setQuoteEdited(true);
+                }}
+                aria-label="Editable order quotation"
+              />
+            </div>
+            <button className="btn btn-primary order-submit-btn" disabled={!cart.length}>Place Order</button>
+          </form>
+        </div>
+        <div className="orders-history area">
+          <div className="order-history-head">
+            <h2 className="section-title">Order History</h2>
+            <select className="order-filter" value={orderStatusFilter} onChange={(e) => setOrderStatusFilter(e.target.value)}>
+              <option value="all">All</option><option value="Pending">Pending</option><option value="Completed">Completed</option><option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+          {filteredOrders.length === 0 ? <div className="empty">No orders found.</div> : filteredOrders.map((order) => (
+            <div className="order-history-card" key={order.id}>
+              <div className="order-history-card-head">
+                <div><b>{order.firm_name}</b><small>{new Date(order.order_datetime).toLocaleString("en-IN")}</small><small>By {order.placed_by_name || "User"}</small></div>
+                <div><span className={`order-status-badge ${String(order.status).toLowerCase()}`}>{order.status}</span></div>
+              </div>
+              <div className="order-history-quote">{order.quote_text || orderInvoiceItems(order).map((item) => `${item.itemName} · ${inr(item.total)}`).join("\n")}</div>
+              {String(user?.role).toLowerCase() === "admin" && order.status === "Pending" && (
+                <div className="order-status-actions"><button className="btn btn-danger" onClick={() => updateOrderStatus(order, "Cancelled")}>Cancel</button><button className="btn btn-success" onClick={() => updateOrderStatus(order, "Completed")}>Complete</button></div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
   async function deleteNotification(n) {
     askDelete(`Delete notification ${n.title}?`, async () => {
@@ -1441,6 +1523,7 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
         category: c.name,
         itemName: s.name,
         qty: q,
+        qtyUnit,
         baseUnitRate,
         margin: marginValue,
         marginWithGst,
@@ -1524,55 +1607,29 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
   }
   function buildQuote() {
     const lines = [];
+    // Short enough to stay on one line on narrow phones (textarea + WhatsApp).
+    const divider = "-".repeat(24);
     lines.push("📝 *ASR Iron* ");
     lines.push("   *" + today() + "*");
-    lines.push("-------------------------------------");
+    lines.push(divider);
     if (!cart.length) {
       lines.push("No items added");
     } else {
       cart.forEach((item, index) => {
         const qtyValue = num(item.qty ?? item.quantity ?? 0);
         const rateValue = num(item.unitRate ?? item.rate ?? 0);
-        const totalValue = num(
-          item.total ??
-            item.finalTotal ??
-            (qtyValue === 0 ? rateValue : rateValue * qtyValue),
-        );
+        const quantityUnit = item.qtyUnit || item.unit || "kg";
         const category = item.category || item.categoryName || "";
         const spec = item.itemName || item.sizeName || item.name || "";
-        if (qtyValue === 0) {
-          lines.push(
-            index +
-              1 +
-              ". *" +
-              category +
-              " - " +
-              spec +
-              "* : *" +
-              inr(rateValue) +
-              "*",
-          );
-        } else {
-          lines.push(
-            index +
-              1 +
-              ". *" +
-              category +
-              " - " +
-              spec +
-              "* : " +
-              inr(rateValue) +
-              "*" +
-              qtyValue +
-              "kg : *" +
-              inr(totalValue) +
-              "*",
-          );
-        }
+        lines.push(
+          `${index + 1}. *${category} - ${spec}* : ${inr(rateValue)} : ${
+            qtyValue ? `${qtyValue}${quantityUnit}` : ""
+          }`,
+        );
         lines.push("");
       });
     }
-    lines.push("-------------------------------------");
+    lines.push(divider);
     lines.push("");
     lines.push("Thankyou!");
     return lines.join("\n");
@@ -1714,7 +1771,7 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
               <input
                 className="input"
                 type="number"
-                placeholder="Sizes"
+                placeholder="Daily Rate"
                 value={newSegment.rate}
                 onChange={(e) =>
                   setNewSegment({ ...newSegment, rate: e.target.value })
@@ -1788,7 +1845,7 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
                 </div>
                 <div className="market-update-grid">
                   <div className="field">
-                    <label className="label">New Sizes</label>
+                    <label className="label">Daily Rate</label>
                     <input
                       className="input"
                       type="number"
@@ -1915,7 +1972,8 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
     }
   }
 
-  function shareWhatsApp() {
+  // Open WhatsApp with the quotation text prefilled.
+  function whatsapp() {
     const text = getCurrentQuoteText();
     if (!text) return setToast("No quote text to share.");
     window.open(
@@ -1925,25 +1983,23 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
     );
   }
 
-  async function shareQuote() {
+  // Share via the device's native share sheet, falling back to clipboard copy.
+  async function nativeShare() {
     const text = getCurrentQuoteText();
     if (!text) return setToast("No quote text to share.");
     if (navigator.share) {
       try {
         await navigator.share({ title: "ASR Iron Quotation", text });
-        return;
       } catch {
-        return;
+        /* user dismissed the share sheet */
       }
+      return;
     }
     await copyQuote();
   }
 
-  const nativeShareQuote = shareQuote;
-  const nativeShareQuotation = shareQuote;
-  const overallShare = shareQuote;
-
-  function resetQuoteText() {
+  // Reset the editable quote text back to the auto-generated version.
+  function resetQuote() {
     try {
       setQuoteText(buildQuote());
       setQuoteEdited(false);
@@ -1953,78 +2009,26 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
     }
   }
 
-  function whatsapp() {
-    if (typeof shareWhatsApp === "function") return shareWhatsApp();
-    if (typeof shareQuotation === "function") return shareQuotation("whatsapp");
-    try {
-      const text =
-        quoteText && String(quoteText).trim() ? quoteText : buildQuote();
-      if (!text) return setToast("No quote text to share.");
-      window.open(
-        "https://wa.me/?text=" + encodeURIComponent(text),
-        "_blank",
-        "noopener,noreferrer",
-      );
-    } catch {
-      setToast("WhatsApp share failed.");
-    }
+  // Print the quotation via a dedicated print window.
+  function printQuote() {
+    const text = getCurrentQuoteText();
+    if (!text) return setToast("No quote text to print.");
+    const win = window.open("", "_blank", "noopener,noreferrer,width=480,height=640");
+    if (!win) return setToast("Allow pop-ups to print the quotation.");
+    win.document.write(
+      `<!doctype html><html><head><title>ASR Iron Quotation</title>` +
+        `<meta name="viewport" content="width=device-width, initial-scale=1" />` +
+        `<style>body{font-family:'Segoe UI',Arial,sans-serif;padding:20px;color:#0f172a}` +
+        `pre{white-space:pre-wrap;word-wrap:break-word;font-size:14px;line-height:1.5;margin:0}</style>` +
+        `</head><body><pre>${text.replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch]))}</pre>` +
+        `<script>window.onload=function(){window.print();};</script></body></html>`,
+    );
+    win.document.close();
   }
 
-  // Legacy fallback only: Telegram UI is intentionally removed.
-  function telegram() {
-    return null;
-  }
-
-  // Legacy fallback only: Email UI is intentionally removed.
-  function email() {
-    return null;
-  }
-
-  function _asrCurrentQuoteText() {
-    try {
-      if (
-        typeof quoteText !== "undefined" &&
-        quoteText &&
-        String(quoteText).trim()
-      )
-        return quoteText;
-      if (typeof buildQuote === "function") return buildQuote();
-    } catch {}
-    return "";
-  }
-
-  async function copyText() {
-    return copyQuote();
-  }
-
-  const nativeShare = shareQuote;
-
-  const share = shareQuote;
-
-  function resetText() {
-    return resetQuoteText();
-  }
-
-  // Legacy fallback only: Telegram UI is intentionally removed.
-  function shareTelegram() {
-    return null;
-  }
-
-  // Legacy fallback only: Email UI is intentionally removed.
-  function shareEmail() {
-    return null;
-  }
-
-  function resetQuote() {
-    return resetQuoteText();
-  }
-
-  function resetQuotation() {
-    return resetQuoteText();
-  }
-
-  function resetShareText() {
-    return resetQuoteText();
+  function openOrderPage() {
+    if (screen === "salesman") setFabTab("orders");
+    else setAdminTab("orders");
   }
 
   function calculatorPage() {
@@ -2153,8 +2157,15 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
               <div className="small-card quantity-margin-card">
                 <div className="quantity-margin-grid">
                   <div className="field">
-                    <label className="label">Step 3: Quantity kg</label>
-                    <input className="input quantity-input" type="number" inputMode="decimal" min="0" step="0.1" value={qty} placeholder="0" onChange={(e) => setQty(e.target.value)} />
+                    <label className="label">Step 3: Quantity</label>
+                    <div className="quantity-unit-row">
+                      <input className="input quantity-input" type="number" inputMode="decimal" min="0" step="0.1" value={qty} placeholder="0" onChange={(e) => setQty(e.target.value)} />
+                      <select className="input quantity-unit-select" value={qtyUnit} onChange={(e) => setQtyUnit(e.target.value)} aria-label="Quantity unit">
+                        <option value="kg">kg</option>
+                        <option value="pcs">pcs</option>
+                        <option value="bundle">bundle</option>
+                      </select>
+                    </div>
                   </div>
                   <div className="field">
                     <label className="label">Margin ₹/kg</label>
@@ -2192,10 +2203,9 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
                       <div className="quote-mini-item">{i.itemName}</div>
                       <div className="quote-mini-cat">
                         {i.category} . {inr(i.unitRate)}
-                        {i.qty === 0 ? "" : ` * ${i.qty}`}
+                        {i.qty === 0 ? "" : ` * ${i.qty} ${i.qtyUnit || "kg"}`}
                       </div>
                     </div>
-                    <div className="quote-mini-price">{inr(i.total)}</div>
                     <button
                       className="quote-mini-delete"
                       onClick={() => deleteQuoteRow(i)}
@@ -2216,6 +2226,14 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
                   }}
                 />
               </div>
+              <button
+                type="button"
+                className="btn btn-primary full calculator-order-btn"
+                onClick={openOrderPage}
+                disabled={!cart.length}
+              >
+                Place Order
+              </button>
               <div className="share-panel compact-share">
                 <button className="share-btn copy" onClick={copyQuote}>
                   <Copy size={15} />
@@ -2229,20 +2247,14 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
                   <Send size={15} />
                   <span>Share</span>
                 </button>
+                <button className="share-btn print" onClick={printQuote}>
+                  <Printer size={15} />
+                  <span>Print</span>
+                </button>
                 <button className="share-btn reset" onClick={resetQuote}>
                   <X size={15} />
                   <span>Reset</span>
                 </button>
-              </div>
-              <div className="quote-total compact-total">
-                <div>
-                  <div className="label">Total kg</div>
-                  <b>{cart.reduce((s, i) => s + i.qty, 0).toFixed(1)} kg</b>
-                </div>
-                <div>
-                  <div className="label">Estimated Invoice</div>
-                  <div className="big-green">{inr(total)}</div>
-                </div>
               </div>
             </>
           )}
@@ -2401,6 +2413,14 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
   function signupsPage() {
     const pending = fabricators.filter((f) => f.status === "Pending"),
       approved = fabricators.filter((f) => f.status === "Approved");
+    const query = fabSearch.trim().toLowerCase();
+    const approvedFabricators = query
+      ? approved.filter(
+          (f) =>
+            String(f.name || "").toLowerCase().includes(query) ||
+            String(f.mobile || "").toLowerCase().includes(query),
+        )
+      : approved;
     return (
       <div className="grid">
         <div className="area">
@@ -2435,15 +2455,164 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
           )}
         </div>
         <div className="area">
-          <h2 className="section-title">Approved Fabricators</h2>
-          {approved.map((f) => (
-            <div className="small-card" key={f.id}>
-              <b>{f.name}</b>
-              <p>
-                {f.mobile} • {f.total_points} pts
-              </p>
-            </div>
-          ))}
+          <h2 className="section-title">
+            <UserPlus size={20} /> Approved Fabricators
+          </h2>
+          <input
+            className="input search-box"
+            placeholder="Search fabricator by name or User ID..."
+            value={fabSearch}
+            onChange={(e) => setFabSearch(e.target.value)}
+          />
+          {approvedFabricators.length === 0 ? (
+            <div className="empty">No approved fabricators.</div>
+          ) : (
+            approvedFabricators.map((f) => {
+              const isOpen = String(openFabId) === String(f.id);
+              // All submissions and redemptions belonging to this fabricator,
+              // newest first, so the admin sees the full activity trail.
+              const claims = submissions
+                .filter((s) => String(s.fabricator_id) === String(f.id))
+                .sort(
+                  (a, b) =>
+                    new Date(b.created_at || 0) - new Date(a.created_at || 0),
+                );
+              const reds = redemptions
+                .filter((r) => String(r.fabricator_id) === String(f.id))
+                .sort(
+                  (a, b) =>
+                    new Date(b.created_at || 0) - new Date(a.created_at || 0),
+                );
+              const approvedPts = claims
+                .filter((s) => String(s.status).toLowerCase() === "approved")
+                .reduce((sum, s) => sum + num(s.points_earned), 0);
+              const paidPts = reds
+                .filter((r) => String(r.status).toLowerCase() === "approved")
+                .reduce(
+                  (sum, r) => sum + num(r.points ?? r.points_requested),
+                  0,
+                );
+              return (
+                <div
+                  className={`fab-manage-card ${isOpen ? "open" : ""}`}
+                  key={f.id}
+                >
+                  <button
+                    type="button"
+                    className="fab-manage-head"
+                    onClick={() => setOpenFabId(isOpen ? null : f.id)}
+                    aria-expanded={isOpen}
+                  >
+                    <div className="fab-manage-id">
+                      <b>{f.name}</b>
+                      <p>
+                        User ID: <strong>{f.mobile}</strong>
+                      </p>
+                    </div>
+                    <div className="fab-manage-points">
+                      <span>
+                        {num(f.total_points).toLocaleString("en-IN")} pts
+                      </span>
+                      <ChevronDown
+                        size={18}
+                        className={`fab-chevron ${isOpen ? "up" : ""}`}
+                      />
+                    </div>
+                  </button>
+                  {isOpen && (
+                    <div className="fab-manage-body">
+                      <div className="fab-stat-row">
+                        <div>
+                          <span>Approved Points</span>
+                          <b>{approvedPts.toLocaleString("en-IN")}</b>
+                        </div>
+                        <div>
+                          <span>Paid / Redeemed</span>
+                          <b>{paidPts.toLocaleString("en-IN")}</b>
+                        </div>
+                        <div>
+                          <span>Available</span>
+                          <b>
+                            {num(f.total_points).toLocaleString("en-IN")}
+                          </b>
+                        </div>
+                      </div>
+
+                      <h4 className="fab-sub-head">Claim History</h4>
+                      {claims.length === 0 ? (
+                        <div className="empty compact-empty">
+                          No claims yet.
+                        </div>
+                      ) : (
+                        claims.map((s) => (
+                          <div className="fab-history-row" key={s.id}>
+                            <div>
+                              <b>{s.item_name}</b>
+                              <small>
+                                {s.site_name || "No site"} • {s.quantity}{" "}
+                                {s.unit} •{" "}
+                                {new Date(
+                                  s.created_at || s.submission_date,
+                                ).toLocaleDateString("en-GB")}
+                              </small>
+                            </div>
+                            <div className="fab-history-right">
+                              <span className="fab-history-points">
+                                {num(s.points_earned).toLocaleString("en-IN")}{" "}
+                                pts
+                              </span>
+                              <span
+                                className={`status-pill ${String(
+                                  s.status,
+                                ).toLowerCase()}`}
+                              >
+                                {s.status}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+
+                      <h4 className="fab-sub-head">Redemption / Paid History</h4>
+                      {reds.length === 0 ? (
+                        <div className="empty compact-empty">
+                          No redemption requests yet.
+                        </div>
+                      ) : (
+                        reds.map((r) => (
+                          <div className="fab-history-row" key={r.id}>
+                            <div>
+                              <b>
+                                {num(
+                                  r.points ?? r.points_requested,
+                                ).toLocaleString("en-IN")}{" "}
+                                pts
+                              </b>
+                              <small>
+                                {new Date(r.created_at).toLocaleDateString(
+                                  "en-GB",
+                                )}
+                                {r.narration ? ` • ${r.narration}` : ""}
+                              </small>
+                            </div>
+                            <div className="fab-history-right">
+                              <span
+                                className={`status-pill ${String(
+                                  r.status,
+                                ).toLowerCase()}`}
+                              >
+                                {r.status}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
     );
@@ -3172,7 +3341,6 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
   }
 
   function alertsPage() {
-    const alertOn = alertsPreference !== "off" && pushPermission === "granted";
     const historyRows =
       user?.role === "Admin"
         ? notifications.filter(
@@ -3181,30 +3349,6 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
         : visibleNotifications;
     return (
       <div className="grid">
-        <div className={`area alerts-settings-card ${alertOn ? "on" : "off"}`}>
-          <div>
-            <h2 className="section-title">
-              <Bell size={20} />
-              Alerts
-            </h2>
-            <p className="muted">
-              Phone notifications are $
-              {alertOn ? "enabled" : "off or not enabled"} on this device.
-            </p>
-          </div>
-          <label className="alerts-radio-row">
-            <span
-              className={alertOn ? "alert-status-green" : "alert-status-muted"}
-            >
-              {alertOn ? "Alerts ON" : "Alerts OFF"}
-            </span>
-            <input
-              type="checkbox"
-              checked={alertOn}
-              onChange={(e) => setAlertsOnOff(e.target.checked)}
-            />
-          </label>
-        </div>
         <div className="area">
           <div className="notification-history-head">
             <h2 className="section-title">
@@ -3261,6 +3405,7 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
       { id: "calculator", label: "Calculator", icon: <Calculator size={18} /> },
       { id: "market", label: "Daily Rate", icon: <BarChart3 size={18} /> },
       { id: "daily", label: "Sizes", icon: <FolderPlus size={18} /> },
+      { id: "orders", label: "Orders", icon: <ClipboardList size={18} /> },
       { id: "claims", label: "Claims", icon: <CheckCircle2 size={18} /> },
       { id: "redemptions", label: "Redeem", icon: <RefreshCw size={18} /> },
       { id: "signups", label: "Signups", icon: <UserPlus size={18} /> },
@@ -3277,6 +3422,7 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
     ],
     salesMenu = [
       { id: "calculator", label: "Calculator", icon: <Calculator size={18} /> },
+      { id: "orders", label: "Orders", icon: <ClipboardList size={18} /> },
     ];
 
   function sideMenu(type) {
@@ -3436,10 +3582,8 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
       typeof Notification !== "undefined"
         ? Notification.permission
         : pushPermission;
-    const fabricatorAlertsOn =
-      type === "fabricator" &&
-      alertsPreference !== "off" &&
-      browserAlertPermission === "granted";
+    const alertsOn =
+      alertsPreference !== "off" && browserAlertPermission === "granted";
     const roleLabel =
       type === "admin"
         ? "ADMIN"
@@ -3470,31 +3614,31 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
               </span>
             </div>
 
-            {type === "fabricator" && (
+            <div className="head-actions">
               <button
                 type="button"
-                className={`fabricator-alert-status-icon ${fabricatorAlertsOn ? "on" : "off"}`}
+                className={`fabricator-alert-status-icon ${alertsOn ? "on" : "off"}`}
                 onClick={() => {
-                  if (fabricatorAlertsOn) {
+                  if (alertsOn) {
                     setAlertsOnOff(false);
                   } else {
                     setAlertPromptOpen(true);
                   }
                 }}
-                aria-label={fabricatorAlertsOn ? "Phone alerts are on" : "Phone alerts are off"}
-                title={fabricatorAlertsOn ? "Alerts On" : "Alerts Off"}
+                aria-label={alertsOn ? "Phone alerts are on" : "Phone alerts are off"}
+                title={alertsOn ? "Alerts On" : "Alerts Off"}
               >
                 <Bell size={17} strokeWidth={2} aria-hidden="true" />
                 <span className="fabricator-alert-status-dot" />
               </button>
-            )}
-            <button
-              className="btn btn-soft header-logout-btn app-light-logout-btn"
-              onClick={logout}
-              aria-label="Sign out"
-            >
-              <LogOut size={18} />
-            </button>
+              <button
+                className="btn btn-soft header-logout-btn app-light-logout-btn"
+                onClick={logout}
+                aria-label="Sign out"
+              >
+                <LogOut size={18} />
+              </button>
+            </div>
           </div>
         </header>
         {sideMenu(type)}
@@ -3510,7 +3654,8 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
       <div className="screen">
         <Header type={type} />
         <main className="main">
-          {isSales && calculatorPage()}
+          {isSales && tab === "calculator" && calculatorPage()}
+          {isSales && tab === "orders" && orderPage()}
           {isAdmin &&
             ["calculator", "market", "daily"].includes(tab) &&
             ticker()}
@@ -3519,6 +3664,7 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
           )}
           {isAdmin && tab === "market" && marketPage()}
           {isAdmin && tab === "daily" && dailyPage()}
+          {isAdmin && tab === "orders" && orderPage()}
           {isAdmin && tab === "claims" && claimsPage()}
           {isAdmin && tab === "redemptions" && redemptionsPage()}
           {isAdmin && tab === "signups" && signupsPage()}
@@ -3698,6 +3844,18 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
     );
   return (
     <div>
+      {pullRefreshDistance > 0 && (
+        <div
+          className="ios-pull-refresh"
+          style={{ transform: `translate(-50%, ${Math.min(pullRefreshDistance, 70)}px)` }}
+        >
+          <RefreshCw
+            size={16}
+            className={pullRefreshDistance >= 70 ? "ready" : ""}
+          />
+          <span>{pullRefreshDistance >= 70 ? "Release to refresh" : "Pull to refresh"}</span>
+        </div>
+      )}
       {toast && (
         <div className="toast toast-message">
           <span>{toast}</span>
@@ -3708,6 +3866,16 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
       )}
       {confirmDialog()}
       {alertEnablePopup()}
+      {orderAlert && (
+        <div className="order-alert-backdrop">
+          <div className="order-alert-modal">
+            <div className="order-alert-icon"><Bell size={24} /></div>
+            <h2>New order placed</h2>
+            <p>{orderAlert.message}</p>
+            <button className="btn btn-primary full" onClick={() => setOrderAlert(null)}>OK, seen</button>
+          </div>
+        </div>
+      )}
       {screen === "login" && loginPage()}
       {screen === "signup" && signupPage()}
       {screen === "admin" && user && dashboard("admin")}

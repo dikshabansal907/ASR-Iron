@@ -90,8 +90,13 @@ export default async function handler(req, res) {
       body: message,
       url,
       icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
-      tag: `asr-${Date.now()}`
+      badge: '/icons/asr-notification-badge.png',
+      tag: `asr-${Date.now()}`,
+      requireInteraction: title.toLowerCase().includes('order'),
+      renotify: true,
+      actions: title.toLowerCase().includes('order')
+        ? [{ action: 'acknowledge', title: 'OK' }]
+        : []
     });
 
     let sent = 0;

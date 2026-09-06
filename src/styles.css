@@ -417,20 +417,59 @@ textarea:focus {
 }
 
 .editable-quote {
-    margin-top: 13px
+    margin-top: 14px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, .05)
+}
+
+.editable-quote .label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 9px;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    color: #0A3E7A
+}
+
+.editable-quote .label::before {
+    content: "";
+    width: 4px;
+    height: 14px;
+    border-radius: 3px;
+    background: linear-gradient(180deg, #0A3E7A, #F29E18)
 }
 
 .quotation-textarea {
     min-height: 120px !important;
-    line-height: 1.45;
+    line-height: 1.55;
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    font-size: 12px;
+    font-size: 12.5px;
     resize: vertical;
     text-align: center !important;
-    background: linear-gradient(135deg, #eff6ff, #f8fbff) !important;
-    border-color: #bfdbfe !important;
+    border-radius: 14px !important;
+    padding: 14px !important;
+    background: linear-gradient(135deg, #f8fbff, #eef5ff) !important;
+    border: 1px solid #cfe0f5 !important;
     color: #0A3E7A !important;
-    font-weight: 800
+    font-weight: 700;
+    box-shadow: inset 0 1px 3px rgba(10, 62, 122, .06);
+    transition: border-color .15s ease, box-shadow .15s ease
+}
+
+.quotation-textarea:focus {
+    outline: none !important;
+    border-color: #0A3E7A !important;
+    box-shadow: 0 0 0 3px rgba(10, 62, 122, .14) !important
+}
+
+.quotation-textarea::selection {
+    background: rgba(242, 158, 24, .25)
 }
 
 .sidebar-backdrop {
@@ -565,7 +604,23 @@ textarea:focus {
 .market-strip {
     display: flex;
     gap: 8px;
-    overflow-x: auto
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent
+}
+
+.market-strip::-webkit-scrollbar {
+    height: 6px
+}
+
+.market-strip::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px
+}
+
+.market-strip::-webkit-scrollbar-track {
+    background: transparent
 }
 
 .rate-chip {
@@ -630,7 +685,8 @@ textarea:focus {
 
 .market-grid {
     display: grid;
-    gap: 11px
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px
 }
 
 .market-card {
@@ -724,49 +780,79 @@ textarea:focus {
 }
 
 .compact-share {
-    display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 7px
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 8px
 }
 
 .share-btn {
+    flex: 1 1 calc(33.333% - 6px);
+    min-width: 82px;
     border: 0;
-    border-radius: 13px;
-    padding: 9px 8px;
+    border-radius: 14px;
+    padding: 11px 8px;
     font-size: 11.5px;
-    font-weight: 950;
+    font-weight: 800;
+    letter-spacing: .2px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
+    gap: 6px;
     color: #fff;
-    box-shadow: 0 8px 18px rgba(15, 23, 42, .08)
+    cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease, filter .12s ease;
+    box-shadow: 0 6px 14px rgba(15, 23, 42, .12)
+}
+
+.share-btn svg {
+    flex-shrink: 0
+}
+
+.share-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.05);
+    box-shadow: 0 10px 20px rgba(15, 23, 42, .16)
+}
+
+.share-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 4px 10px rgba(15, 23, 42, .12)
 }
 
 .share-btn.copy {
-    background: #0A3E7A
+    background: linear-gradient(135deg, #0A3E7A, #12569e)
 }
 
 .share-btn.whatsapp {
-    background: #16a34a
+    background: linear-gradient(135deg, #16a34a, #22c55e)
 }
 
 .share-btn.telegram {
-    background: #0284c7
+    background: linear-gradient(135deg, #0284c7, #38bdf8)
 }
 
 .share-btn.email {
-    background: #475569
+    background: linear-gradient(135deg, #475569, #64748b)
 }
 
 .share-btn.native {
-    background: #F29E18;
-    color: #111827
+    background: linear-gradient(135deg, #F29E18, #f5b544);
+    color: #3a2a06
+}
+
+.share-btn.print {
+    background: linear-gradient(135deg, #6366f1, #818cf8)
 }
 
 .share-btn.reset {
     background: #f1f5f9;
-    color: #475569
+    color: #475569;
+    box-shadow: inset 0 0 0 1px #e2e8f0
+}
+
+.share-btn.reset:hover {
+    filter: none;
+    background: #e9eef5
 }
 
 .size-card-list {
@@ -1355,12 +1441,26 @@ textarea:focus {
         grid-template-columns: 1fr
     }
 
+    /* Two Daily Rate cards per row on phones; tighten spacing so they fit. */
+    .market-grid {
+        gap: 9px
+    }
+
+    .market-card {
+        padding: 11px
+    }
+
+    .market-card-actions {
+        min-width: 0 !important;
+        gap: 8px !important
+    }
+
     .size-edit-side {
         grid-template-columns: 1fr 36px
     }
 
     .compact-share {
-        grid-template-columns: repeat(3, minmax(0, 1fr))
+        flex-wrap: nowrap
     }
 
     .share-btn span {
@@ -1368,7 +1468,9 @@ textarea:focus {
     }
 
     .share-btn {
-        padding: 10px
+        flex: 1 1 0;
+        min-width: 0;
+        padding: 11px 6px
     }
 
     .items-list-wrap {
@@ -4661,6 +4763,7 @@ body.asr-add-item-lock {
 .fabricator-alert-status-icon {
   position: relative;
   width: 38px;
+  margin: 5px;
   min-width: 38px;
   height: 38px;
   padding: 0;
@@ -5260,3 +5363,458 @@ button.fabricator-alert-status-icon.off .fabricator-alert-status-dot {
   display: none !important;
 }
 /* ASR_SALESMAN_MINIMAL_UI_END */
+
+/* ASR_FABRICATOR_ADMIN_HISTORY_START */
+/* Expandable admin card that reveals a fabricator's claim & payment history. */
+.fab-manage-card {
+  margin-bottom: 12px;
+  border: 1px solid #dbe4ef;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, .05);
+  overflow: hidden;
+}
+.fab-manage-card.open {
+  border-color: #bfdbfe;
+  box-shadow: 0 10px 26px rgba(30, 58, 138, .12);
+}
+.fab-manage-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+.fab-manage-id b { font-size: 14px; color: #0f172a; }
+.fab-manage-id p { margin: 4px 0 0; color: #64748b; font-size: 11px; }
+.fab-manage-id strong { color: #0a3e7a; }
+.fab-manage-points {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #166534;
+  font-weight: 900;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.fab-chevron { color: #64748b; transition: transform .2s ease; }
+.fab-chevron.up { transform: rotate(180deg); }
+.fab-manage-body {
+  padding: 4px 16px 16px;
+  border-top: 1px solid #eef2f7;
+}
+.fab-stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 12px 0 8px;
+}
+.fab-stat-row > div {
+  padding: 10px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #eef2f7;
+  text-align: center;
+}
+.fab-stat-row span { display: block; color: #64748b; font-size: 10px; font-weight: 800; }
+.fab-stat-row b { display: block; margin-top: 3px; color: #0f172a; font-size: 14px; }
+.fab-sub-head {
+  margin: 14px 0 8px;
+  font-size: 12px;
+  font-weight: 900;
+  color: #0a3e7a;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.fab-history-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px dashed #e5eaf1;
+}
+.fab-history-row:last-child { border-bottom: 0; }
+.fab-history-row b { font-size: 13px; color: #0f172a; }
+.fab-history-row small { display: block; margin-top: 3px; color: #64748b; font-size: 10px; }
+.fab-history-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.fab-history-points { font-size: 12px; font-weight: 900; color: #0a3e7a; }
+@media (max-width: 720px) {
+  .fab-stat-row { grid-template-columns: 1fr; }
+  .fab-history-right { flex-direction: column; align-items: flex-end; gap: 4px; }
+}
+/* ASR_FABRICATOR_ADMIN_HISTORY_END */
+
+/* ASR_MARKET_PAGE_POLISH_START */
+/* Cleaner, more compact Daily Rate cards and header. */
+.market-card {
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #ffffff, #f8fbff);
+  padding: 11px;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, .06);
+  transition: box-shadow .15s ease, border-color .15s ease;
+}
+.market-card:hover {
+  border-color: #cfe0f5;
+  box-shadow: 0 12px 26px rgba(10, 62, 122, .1);
+}
+.market-card .rate-value {
+  font-size: 19px;
+  font-weight: 950;
+  color: #0A3E7A;
+  margin-top: 1px;
+  line-height: 1.05;
+}
+.market-card .rate-change {
+  margin-top: 5px;
+  padding: 2px 7px;
+}
+.market-card .rate-time {
+  margin-top: 5px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+/* Compact editable name field. */
+.market-card .market-category-name-input {
+  min-height: 32px !important;
+  margin: 0 0 6px !important;
+  padding: 5px 9px !important;
+  font-size: 12px !important;
+}
+
+/* Divider + compact inputs for the editable Daily Rate / Freight row. */
+.market-update-grid {
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px dashed #e4ebf3;
+  gap: 8px;
+}
+.market-update-grid .label {
+  font-size: 9.5px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: #64748b;
+  margin-bottom: 3px;
+}
+.market-update-grid .input {
+  min-height: 34px !important;
+  border-radius: 10px;
+  border: 1px solid #d7e1ee;
+  background: #fff;
+  font-weight: 800;
+  font-size: 13px;
+  color: #0f172a;
+  text-align: center;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+.market-update-grid .input:focus {
+  border-color: #0A3E7A;
+  box-shadow: 0 0 0 3px rgba(10, 62, 122, .1);
+  outline: none;
+}
+
+.market-delete-btn {
+  transition: filter .12s ease, transform .12s ease;
+}
+.market-delete-btn:hover {
+  filter: brightness(.97);
+  transform: translateY(-1px);
+}
+
+/* Section header, note and search on the Daily Rate page. */
+.section-note {
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.search-box {
+  border-radius: 13px;
+  border: 1px solid #d7e1ee;
+  background: #fff;
+}
+.search-box:focus {
+  border-color: #0A3E7A;
+  box-shadow: 0 0 0 3px rgba(10, 62, 122, .1);
+  outline: none;
+}
+
+/* "Add New Market Item" form. */
+.market-page-add-form,
+.market-grid ~ form,
+form.small-card {
+  border-radius: 15px;
+}
+form.small-card h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 900;
+  color: #0A3E7A;
+}
+form.small-card .grid-3 {
+  margin-bottom: 10px;
+}
+form.small-card .input {
+  border-radius: 11px;
+  border: 1px solid #d7e1ee;
+  background: #fff;
+}
+form.small-card .input:focus {
+  border-color: #0A3E7A;
+  box-shadow: 0 0 0 3px rgba(10, 62, 122, .1);
+  outline: none;
+}
+
+/* Sizes page — compact, cleaner size cards to match Daily Rate. */
+.size-card-list {
+  gap: 9px;
+}
+.size-edit-card {
+  padding: 11px;
+  border-radius: 14px;
+  border-left-width: 4px;
+  box-shadow: 0 6px 16px rgba(10, 62, 122, .06);
+}
+.size-name-input {
+  border-radius: 10px !important;
+  border: 1px solid #d7e1ee !important;
+  background: #fff !important;
+  min-height: 38px !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+}
+.size-preview {
+  font-size: 11px;
+  margin-top: 5px;
+}
+.size-preview b {
+  color: #0A3E7A;
+}
+.diff-input {
+  border-radius: 10px !important;
+  border: 1px solid #d7e1ee !important;
+  background: #fff !important;
+  min-height: 38px !important;
+  text-align: center;
+  font-weight: 800;
+}
+.size-name-input:focus,
+.diff-input:focus {
+  border-color: #0A3E7A !important;
+  box-shadow: 0 0 0 3px rgba(10, 62, 122, .1) !important;
+  outline: none !important;
+}
+.size-delete-btn {
+  transition: filter .12s ease, transform .12s ease;
+}
+.size-delete-btn:hover {
+  filter: brightness(.97);
+  transform: translateY(-1px);
+}
+/* ASR_MARKET_PAGE_POLISH_END */
+
+/* ASR_ORDER_PAGE_START */
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+.orders-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, .9fr);
+  gap: 12px;
+}
+.order-page-heading,
+.order-history-head,
+.order-invoice-head,
+.order-history-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.order-page-heading .section-title,
+.order-history-head .section-title { margin-bottom: 3px; }
+.order-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.order-form-grid .input,
+.order-filter { border-radius: 11px; }
+.order-selected-firm {
+  margin: 2px 0 12px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 11px;
+}
+.order-invoice {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #dbe4ef;
+  border-radius: 15px;
+  background: linear-gradient(180deg, #fff, #f8fbff);
+}
+.order-invoice-head { align-items: center; padding-bottom: 10px; border-bottom: 1px dashed #dbe4ef; }
+.order-invoice-head span,
+.order-invoice-head b { display: block; }
+.order-invoice-head span { color: #64748b; font-size: 10px; text-transform: uppercase; font-weight: 900; letter-spacing: .4px; }
+.order-invoice-head b { margin-top: 3px; color: #0f172a; font-size: 15px; }
+.order-invoice-head > strong { color: #0A3E7A; font-size: 18px; white-space: nowrap; }
+.order-line-list { display: grid; gap: 7px; margin-top: 10px; }
+.order-line { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #eef2f7; }
+.order-line:last-child { border-bottom: 0; }
+.order-line > span { color: #94a3b8; font-size: 11px; font-weight: 900; }
+.order-line b, .order-line small { display: block; }
+.order-line b { color: #0f172a; font-size: 12px; }
+.order-line small { margin-top: 2px; color: #64748b; font-size: 10px; }
+.order-line > strong { color: #0A3E7A; font-size: 12px; white-space: nowrap; }
+.order-submit-btn { margin-top: 14px; }
+.calculator-order-btn { margin-top: 12px; }
+.order-quote-editor {
+  width: 100%;
+  min-height: 230px !important;
+  margin-top: 12px;
+  padding: 14px !important;
+  border-radius: 13px !important;
+  border: 1px solid #cfe0f5 !important;
+  background: linear-gradient(135deg, #f8fbff, #eef5ff) !important;
+  color: #0A3E7A !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.55;
+  text-align: center !important;
+  white-space: pre-wrap;
+  resize: vertical;
+}
+.order-quote-editor:focus {
+  outline: none !important;
+  border-color: #0A3E7A !important;
+  box-shadow: 0 0 0 3px rgba(10, 62, 122, .12) !important;
+}
+.order-history-quote {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background: #f8fbff;
+  border: 1px solid #e2e8f0;
+  color: #0A3E7A;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  white-space: pre-wrap;
+}
+.quantity-unit-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  gap: 8px;
+}
+.quantity-unit-select {
+  text-align: center;
+  font-weight: 800;
+}
+.order-filter { min-height: 36px; width: auto; padding: 6px 9px; }
+.order-history-card { margin-top: 10px; padding: 12px; border: 1px solid #dbe4ef; border-radius: 14px; background: #fff; }
+.order-history-card-head b,
+.order-history-card-head small { display: block; }
+.order-history-card-head b { color: #0f172a; font-size: 13px; }
+.order-history-card-head small { margin-top: 3px; color: #64748b; font-size: 10px; }
+.order-history-card-head > div:last-child { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; }
+.order-history-card-head > div:last-child > strong { color: #0A3E7A; font-size: 13px; }
+.order-status-badge { display: inline-flex; align-items: center; border-radius: 999px; padding: 4px 8px; font-size: 10px; font-weight: 900; text-transform: uppercase; }
+.order-status-badge.pending { background: #fef3c7; color: #92400e; }
+.order-status-badge.completed { background: #dcfce7; color: #166534; }
+.order-status-badge.cancelled { background: #fee2e2; color: #991b1b; }
+.order-history-items { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+.order-history-items span { padding: 4px 7px; border-radius: 7px; background: #f1f5f9; color: #475569; font-size: 10px; }
+.order-status-actions { display: flex; gap: 7px; margin-top: 10px; }
+.order-status-actions .btn { flex: 1; min-height: 34px; padding: 7px; font-size: 11px; }
+.order-alert-backdrop { position: fixed; inset: 0; z-index: 500; display: grid; place-items: center; padding: 18px; background: rgba(15, 23, 42, .62); }
+.order-alert-modal { width: min(360px, 100%); padding: 24px; border: 2px solid #f29e18; border-radius: 20px; background: #fff; text-align: center; box-shadow: 0 24px 70px rgba(15, 23, 42, .3); }
+.order-alert-icon { display: grid; place-items: center; width: 52px; height: 52px; margin: 0 auto 10px; border-radius: 16px; background: #fff7ed; color: #c2410c; animation: asr-order-ring 1s ease-in-out infinite; }
+.order-alert-modal h2 { margin: 0; color: #0f172a; font-size: 20px; }
+.order-alert-modal p { margin: 8px 0 18px; color: #475569; font-size: 13px; line-height: 1.5; }
+@keyframes asr-order-ring { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+@media (max-width: 900px) { .orders-page { grid-template-columns: 1fr; } }
+@media (max-width: 520px) {
+  .order-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+  .order-form-grid .label { font-size: 10px; }
+  .order-form-grid .input { padding-left: 8px; padding-right: 8px; font-size: 12px; }
+  .order-page-heading, .order-history-head { align-items: center; }
+  .order-invoice { padding: 11px; }
+}
+/* ASR_ORDER_PAGE_END */
+
+.ios-pull-refresh {
+  position: fixed;
+  top: -42px;
+  left: 50%;
+  z-index: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid #dbe4ef;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .96);
+  color: #64748b;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, .14);
+  font-size: 10px;
+  font-weight: 800;
+  pointer-events: none;
+  transform: translate(-50%, 0);
+  transition: transform .12s ease, color .12s ease;
+}
+.ios-pull-refresh svg { transition: transform .15s ease; }
+.ios-pull-refresh svg.ready { color: #0A3E7A; transform: rotate(180deg); }
+
+/* Keep editable numeric entries visually neutral instead of bold. */
+.quantity-input,
+.margin-input,
+.market-update-grid .input,
+.diff-input {
+  font-weight: 400 !important;
+  text-align: left !important;
+}
+.size-preview b {
+  font-weight: 400;
+}
+
+.size-card-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.size-edit-card {
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+.size-edit-side {
+  grid-template-columns: minmax(0, 1fr) 34px;
+  align-items: center;
+}
+@media (max-width: 520px) {
+  .size-card-list { gap: 8px; }
+  .size-edit-card { padding: 9px; }
+  .size-edit-side { gap: 6px; }
+}
+
+

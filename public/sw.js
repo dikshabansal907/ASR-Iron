@@ -3,8 +3,8 @@
 const ASR_NOTIFICATION_ICON = '/icons/icon-192.png';
 const ASR_NOTIFICATION_BADGE = '/icons/asr-notification-badge.png';
 
-const CACHE_NAME = 'asr-iron-pwa-v5';
-const ASSETS = ['/', '/index.html', '/manifest.webmanifest', '/asr-logo.png', '/asr-logo-white.png', '/icons/icon-192.png'];
+const CACHE_NAME = 'asr-iron-pwa-v6';
+const ASSETS = ['/', '/index.html', '/manifest.webmanifest', '/asr-logo.png', '/asr-logo-white.png', '/icons/icon-192.png', '/icons/asr-notification-badge.png'];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
@@ -28,12 +28,15 @@ self.addEventListener('push', (event) => {
 
   const title = data.title || 'ASR Iron';
   const options = {
-    icon: ASR_NOTIFICATION_ICON,
-    badge: ASR_NOTIFICATION_BADGE,
     body: data.body || data.message || 'New ASR Iron notification',
-    icon: data.icon || '/icons/icon-192.png',
-    badge: data.badge || '/icons/icon-192.png',
+    // Large full-colour artwork shown inside the expanded notification.
+    icon: data.icon || ASR_NOTIFICATION_ICON,
+    // Small monochrome silhouette shown in the phone's status bar.
+    badge: data.badge || ASR_NOTIFICATION_BADGE,
     tag: data.tag || 'asr-iron-notification',
+    renotify: true,
+    requireInteraction: Boolean(data.requireInteraction),
+    actions: data.actions || [],
     data: { url: data.url || '/' },
     vibrate: [120, 60, 120]
   };
