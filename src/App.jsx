@@ -685,12 +685,24 @@ export default function App() {
             : "fabricator",
       );
       setAdminTab("calculator");
-      setFabTab("apply");
+      setFabTab(saved.role === "salesman" ? "calculator" : "apply");
     }
     if ("serviceWorker" in navigator)
       window.addEventListener("load", () =>
         navigator.serviceWorker.register("/sw.js").catch(() => {}),
       );
+  }, []);
+  useEffect(() => {
+    const clearRestoredCalculator = (event) => {
+      if (!event.persisted) return;
+      setCart([]);
+      setQuoteText("");
+      setQuoteEdited(true);
+      setSizeId("");
+      setQty("");
+    };
+    window.addEventListener("pageshow", clearRestoredCalculator);
+    return () => window.removeEventListener("pageshow", clearRestoredCalculator);
   }, []);
   useEffect(() => {
     let startY = 0;
@@ -728,7 +740,14 @@ export default function App() {
       const shouldRefresh = pullRefreshDistanceRef.current >= 70;
       pullRefreshDistanceRef.current = 0;
       setPullRefreshDistance(0);
-      if (shouldRefresh) loadAll();
+      if (shouldRefresh) {
+        setCart([]);
+        setQuoteText("");
+        setQuoteEdited(true);
+        setSizeId("");
+        setQty("");
+        loadAll();
+      }
     };
 
     document.addEventListener("touchstart", onTouchStart, { passive: true });
@@ -906,6 +925,7 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
 
       setUser(u);
       setScreen("salesman");
+      setFabTab("calculator");
       saveLogin("salesman", u);
       return;
     }
@@ -1189,7 +1209,7 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
                 <div><span className={`order-status-badge ${String(order.status).toLowerCase()}`}>{order.status}</span></div>
               </div>
               <div className="order-history-quote">{order.quote_text || orderInvoiceItems(order).map((item) => `${item.itemName} · ${inr(item.total)}`).join("\n")}</div>
-              {String(user?.role).toLowerCase() === "admin" && order.status === "Pending" && (
+              {["admin", "salesman"].includes(String(user?.role).toLowerCase()) && order.status === "Pending" && (
                 <div className="order-status-actions"><button className="btn btn-danger" onClick={() => updateOrderStatus(order, "Cancelled")}>Cancel</button><button className="btn btn-success" onClick={() => updateOrderStatus(order, "Completed")}>Complete</button></div>
               )}
             </div>
@@ -1806,24 +1826,26 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
             const d = delta(row);
             return (
               <div className="market-card" key={row.id}>
-                <div className="market-card-head">
+                <div className="market-category-row">
+                  <input
+                    className="market-category-name-input"
+                    defaultValue={row.name}
+                    aria-label={`Edit ${row.name} category name`}
+                    title="Edit category name"
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault();
+                        event.currentTarget.blur();
+                      }
+                    }}
+                    onBlur={async (event) => {
+                      const saved = await updateCategoryName(row, event.target.value);
+                      if (!saved) event.target.value = row.name;
+                    }}
+                  />
+                </div>
+                <div className="market-rate-row">
                   <div className="market-card-content">
-                    <input
-                      className="market-category-name-input"
-                      defaultValue={row.name}
-                      aria-label={`Edit ${row.name} category name`}
-                      title="Edit category name"
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter') {
-                          event.preventDefault();
-                          event.currentTarget.blur();
-                        }
-                      }}
-                      onBlur={async (event) => {
-                        const saved = await updateCategoryName(row, event.target.value);
-                        if (!saved) event.target.value = row.name;
-                      }}
-                    />
                     <div className="rate-value">{inr(row.daily_rate)}</div>
                     <div className={`rate-change ${d.cls}`}>
                       {d.icon}
@@ -2015,17 +2037,18 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
   function printQuote() {
     const text = getCurrentQuoteText();
     if (!text) return setToast("No quote text to print.");
-    const win = window.open("", "_blank", "noopener,noreferrer,width=480,height=640");
+    const win = window.open("", "_blank", "width=480,height=640");
     if (!win) return setToast("Allow pop-ups to print the quotation.");
     win.document.write(
       `<!doctype html><html><head><title>ASR Iron Quotation</title>` +
         `<meta name="viewport" content="width=device-width, initial-scale=1" />` +
         `<style>body{font-family:'Segoe UI',Arial,sans-serif;padding:20px;color:#0f172a}` +
         `pre{white-space:pre-wrap;word-wrap:break-word;font-size:14px;line-height:1.5;margin:0}</style>` +
-        `</head><body><pre>${text.replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch]))}</pre>` +
-        `<script>window.onload=function(){window.print();};</script></body></html>`,
+        `</head><body><pre>${text.replace(/[&<>]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[ch]))}</pre></body></html>`,
     );
     win.document.close();
+      win.focus();
+      setTimeout(() => win.print(), 250);
   }
 
   function openOrderPage() {
@@ -3406,9 +3429,9 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
 
   const adminMenu = [
       { id: "calculator", label: "Calculator", icon: <Calculator size={18} /> },
+      { id: "orders", label: "Orders", icon: <ClipboardList size={18} /> },
       { id: "market", label: "Daily Rate", icon: <BarChart3 size={18} /> },
       { id: "daily", label: "Sizes", icon: <FolderPlus size={18} /> },
-      { id: "orders", label: "Orders", icon: <ClipboardList size={18} /> },
       { id: "claims", label: "Claims", icon: <CheckCircle2 size={18} /> },
       { id: "redemptions", label: "Redeem", icon: <RefreshCw size={18} /> },
       { id: "signups", label: "Signups", icon: <UserPlus size={18} /> },

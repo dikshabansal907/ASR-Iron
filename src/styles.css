@@ -3764,6 +3764,49 @@ select.asr-calculator-size-select-icon-only {
   .quantity-input, .margin-input { padding: 8px 9px; }
   .quantity-margin-grid .label { font-size: 8px; }
 }
+
+  /* Compact mobile action controls. */
+  .market-card-actions {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 4px !important;
+    min-width: 0 !important;
+  }
+  .market-card-actions .market-card-top-toggle {
+    gap: 3px !important;
+    margin: 0 !important;
+    padding: 3px 4px !important;
+    font-size: 8px !important;
+  }
+  .market-card-actions .market-card-top-toggle input {
+    width: 26px !important;
+    height: 16px !important;
+  }
+  .market-card-actions .market-card-top-toggle input::before {
+    top: 2px !important;
+    left: 2px !important;
+    width: 12px !important;
+    height: 12px !important;
+  }
+  .market-card-actions .market-card-top-toggle input:checked::before {
+    transform: translateX(10px) !important;
+  }
+  .market-card-actions .market-delete-btn {
+    width: 28px !important;
+    height: 28px !important;
+  }
+  .quote-mini-row {
+    grid-template-columns: minmax(0, 1fr) 32px !important;
+  }
+  .quote-mini-delete {
+    justify-self: end;
+  }
+  .size-delete-btn {
+    width: 34px;
+    height: 38px;
+    min-width: 34px;
+  }
 /* ASR_MARGIN_FIELDS_END */
 
 /* =========================================================
@@ -5824,6 +5867,83 @@ form.small-card .input:focus {
   .size-card-list { gap: 8px; }
   .size-edit-card { padding: 9px; }
   .size-edit-side { gap: 6px; }
+}
+
+/* Keep the same scrollable navigation available on tablets and desktop. */
+.bottom-nav-scroll {
+  display: flex !important;
+  overflow-x: auto !important;
+  white-space: nowrap;
+}
+
+/* Final compact Daily Rate action sizing. */
+.market-card-actions {
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 4px !important;
+  min-width: 0 !important;
+}
+.market-card-actions .market-card-top-toggle {
+  display: inline-flex !important;
+  gap: 3px !important;
+  margin: 0 !important;
+  padding: 2px 3px !important;
+  font-size: 7px !important;
+  line-height: 1 !important;
+}
+.market-card-actions .market-card-top-toggle input {
+  width: 23px !important;
+  height: 14px !important;
+}
+.market-card-actions .market-card-top-toggle input::before {
+  top: 2px !important;
+  left: 2px !important;
+  width: 10px !important;
+  height: 10px !important;
+}
+.market-card-actions .market-card-top-toggle input:checked::before {
+  transform: translateX(9px) !important;
+}
+.market-card-actions .market-delete-btn {
+  width: 27px !important;
+  height: 27px !important;
+}
+
+/* Final market-card structure: category name row, then rate/actions row. */
+.market-category-row {
+  width: 100%;
+  min-width: 0;
+}
+.market-category-row .market-category-name-input {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 0 8px !important;
+}
+.market-rate-row {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: start !important;
+  gap: 8px !important;
+  width: 100%;
+}
+.market-rate-row .market-card-actions {
+  align-self: start !important;
+  padding-top: 2px !important;
+}
+.market-rate-row .rate-change {
+  width: fit-content;
+  max-width: 100%;
+  gap: 2px;
+  padding: 2px 5px;
+  font-size: 9px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.market-rate-row .rate-change svg {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 auto;
 }
 
 
