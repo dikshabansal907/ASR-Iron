@@ -3705,7 +3705,7 @@ select.asr-calculator-size-select-icon-only {
 }
 .quantity-margin-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   align-items: end;
 }
@@ -3737,6 +3737,15 @@ select.asr-calculator-size-select-icon-only {
   cursor: text !important;
   -webkit-text-fill-color: #0f172a;
 }
+.quantity-input {
+  min-width: 0;
+  font-size: 16px;
+}
+.quantity-unit-select {
+  min-width: 0;
+  width: 100%;
+  font-size: 12px;
+}
 .quantity-input:focus,
 .margin-input:focus {
   border-color: #0a3e7a !important;
@@ -3750,9 +3759,9 @@ select.asr-calculator-size-select-icon-only {
   -webkit-text-fill-color: #94a3b8;
 }
 @media (max-width: 380px) {
-  .quantity-margin-grid { gap: 8px; }
+  .quantity-margin-grid { gap: 8px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .quantity-margin-card { padding: 10px !important; }
-  .quantity-input, .margin-input { padding: 8px 9px; font-size: 13px; }
+  .quantity-input, .margin-input { padding: 8px 9px; }
   .quantity-margin-grid .label { font-size: 8px; }
 }
 /* ASR_MARGIN_FIELDS_END */

@@ -2158,14 +2158,15 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
                 <div className="quantity-margin-grid">
                   <div className="field">
                     <label className="label">Step 3: Quantity</label>
-                    <div className="quantity-unit-row">
-                      <input className="input quantity-input" type="number" inputMode="decimal" min="0" step="0.1" value={qty} placeholder="0" onChange={(e) => setQty(e.target.value)} />
-                      <select className="input quantity-unit-select" value={qtyUnit} onChange={(e) => setQtyUnit(e.target.value)} aria-label="Quantity unit">
-                        <option value="kg">kg</option>
-                        <option value="pcs">pcs</option>
-                        <option value="bundle">bundle</option>
-                      </select>
-                    </div>
+                    <input className="input quantity-input" type="number" inputMode="decimal" min="0" step="0.1" value={qty} placeholder="0" onChange={(e) => setQty(e.target.value)} />
+                  </div>
+                  <div className="field">
+                    <label className="label">Unit</label>
+                    <select className="input quantity-unit-select" value={qtyUnit} onChange={(e) => setQtyUnit(e.target.value)} aria-label="Quantity unit">
+                      <option value="kg">kg</option>
+                      <option value="pcs">pcs</option>
+                      <option value="bundle">bundle</option>
+                    </select>
                   </div>
                   <div className="field">
                     <label className="label">Margin ₹/kg</label>
