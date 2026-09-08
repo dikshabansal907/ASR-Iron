@@ -3081,89 +3081,20 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
   /* ASR_FABRICATOR_STATUS_ICON_HELPER_END */
 
   /* ASR_STAMP_SVG_HELPER_START */
+  // Renders the approved/rejected stamp artwork (transparent PNGs) so it
+  // blends into the card background instead of showing a boxed image.
   function stampSVG(type, uid, size) {
-    const color = type === 'approved' ? '#08b83f' : '#f12f2f';
     const label = type === 'approved' ? 'APPROVED' : 'REJECTED';
-    const ringText = type === 'approved'
-      ? '\u2022 APPROVED \u2022 APPROVED \u2022 APPROVED \u2022 APPROVED \u2022 APPROVED \u2022 APPROVED \u2022'
-      : '\u2022 REJECTED \u2022 REJECTED \u2022 REJECTED \u2022 REJECTED \u2022 REJECTED \u2022 REJECTED \u2022';
-
-    const cx = 100, cy = 100;
-    const scallopBase = 84;
-    const scallopPeak = 95;
-    const innerR = 62;
-    const textR = 74;
-    const N = 24;
-    const svgSize = size != null ? size : 110;
-
-    // Generate scalloped outer border path (clockwise, starting from top)
-    let d = '';
-    for (let i = 0; i < N; i++) {
-      const a1 = (i / N) * 2 * Math.PI - Math.PI / 2;
-      const a2 = ((i + 0.5) / N) * 2 * Math.PI - Math.PI / 2;
-      const a3 = ((i + 1) / N) * 2 * Math.PI - Math.PI / 2;
-      const x1 = (cx + scallopBase * Math.cos(a1)).toFixed(2);
-      const y1 = (cy + scallopBase * Math.sin(a1)).toFixed(2);
-      const px = (cx + scallopPeak * Math.cos(a2)).toFixed(2);
-      const py = (cy + scallopPeak * Math.sin(a2)).toFixed(2);
-      const x3 = (cx + scallopBase * Math.cos(a3)).toFixed(2);
-      const y3 = (cy + scallopBase * Math.sin(a3)).toFixed(2);
-      d += i === 0 ? `M${x1} ${y1} ` : '';
-      d += `Q${px} ${py} ${x3} ${y3} `;
-    }
-    d += 'Z';
-
-    // Circular path for ring text (clockwise from top)
-    const pathId = `asr-tp-${uid}-${type}`;
-    const textCircle = `M${cx} ${cy - textR} A${textR} ${textR} 0 0 1 ${cx} ${cy + textR} A${textR} ${textR} 0 0 1 ${cx} ${cy - textR}`;
-    const circumference = (2 * Math.PI * textR).toFixed(1);
-
+    const src = type === 'approved' ? '/approved.png' : '/rejected.png';
+    const style = size != null ? { width: size, height: "auto" } : undefined;
     return (
-      <svg
-        viewBox="0 0 200 200"
-        width={svgSize}
-        height={svgSize}
-        style={{ display: 'block', margin: '0 auto', transform: 'rotate(-7deg)', overflow: 'visible', flexShrink: 0 }}
-        aria-label={label}
-        role="img"
-      >
-        <defs>
-          <path id={pathId} d={textCircle} />
-        </defs>
-        {/* Scalloped shape — white fill, then colored stroke */}
-        <path d={d} fill="white" />
-        <path d={d} fill="none" stroke={color} strokeWidth="3.5" />
-        {/* Inner circle */}
-        <circle cx={cx} cy={cy} r={innerR} fill="white" stroke={color} strokeWidth="3" />
-        {/* Ring text going all the way around */}
-        <text fill={color} fontSize="10" fontWeight="800" fontFamily="'Arial','Helvetica',sans-serif">
-          <textPath
-            href={`#${pathId}`}
-            startOffset="50%"
-            textAnchor="middle"
-            textLength={circumference}
-            lengthAdjust="spacing"
-          >
-            {ringText}
-          </textPath>
-        </text>
-        {/* Icon */}
-        {type === 'approved' ? (
-          <polyline
-            points="74,102 89,118 126,82"
-            fill="none"
-            stroke={color}
-            strokeWidth="9"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        ) : (
-          <>
-            <line x1="77" y1="77" x2="123" y2="123" stroke={color} strokeWidth="9" strokeLinecap="round" />
-            <line x1="123" y1="77" x2="77" y2="123" stroke={color} strokeWidth="9" strokeLinecap="round" />
-          </>
-        )}
-      </svg>
+      <img
+        src={src}
+        alt={label}
+        className="claim-status-stamp-img"
+        style={style}
+        draggable="false"
+      />
     );
   }
   /* ASR_STAMP_SVG_HELPER_END */
@@ -3795,15 +3726,15 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
       <div className="screen">
         <Header type={type} />
         <main className="main">
-          {isSales && tab === "calculator" && calculatorPage()}
-          {isSales && tab === "orders" && orderPage()}
-          {displayLine && ["admin", "salesman"].includes(type) && (
+          {displayLine && ["admin", "salesman", "fabricator"].includes(type) && (
             <div className="app-display-marquee" aria-label={displayLine}>
               <div className="app-display-marquee-track">
                 <span>{displayLine}</span>
               </div>
             </div>
           )}
+          {isSales && tab === "calculator" && calculatorPage()}
+          {isSales && tab === "orders" && orderPage()}
           {isAdmin &&
             ["calculator", "market", "daily"].includes(tab) &&
             ticker()}
