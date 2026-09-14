@@ -442,7 +442,8 @@ export default function App() {
     [claimOk, setClaimOk] = useState(false);
   // Which approved fabricator's history panel is currently expanded (admin view).
   const [openFabId, setOpenFabId] = useState(null),
-    [fabSearch, setFabSearch] = useState("");
+    [fabSearch, setFabSearch] = useState(""),
+    [historyFabId, setHistoryFabId] = useState(null);
   const [notifications, setNotifications] = useState([]),
     [newNotification, setNewNotification] = useState({
       target: "all",
@@ -2798,19 +2799,62 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
   }
 
   function historyPage() {
+    const historyFabricators = fabricators.filter((f) =>
+      submissions.some((s) => String(s.fabricator_id) === String(f.id)),
+    );
     return (
       <div className="area">
-        <h2 className="section-title">Processed Logs</h2>
-        {submissions
-          .filter((s) => s.status !== "Pending")
-          .map((s) => (
-            <div className="small-card" key={s.id}>
-              <b>{s.item_name}</b>
-              <p>
-                {s.points_earned} pts • {s.status}
-              </p>
+        <h2 className="section-title">Points History</h2>
+        {historyFabricators.length === 0 ? (
+          <div className="empty">No processed points yet.</div>
+        ) : historyFabricators.map((fab) => {
+          const isOpen = String(historyFabId) === String(fab.id);
+          const claims = submissions.filter((s) => String(s.fabricator_id) === String(fab.id));
+          const redemptionsForFab = redemptions.filter((r) => String(r.fabricator_id) === String(fab.id));
+          const approvedPoints = claims
+            .filter((s) => String(s.status).toLowerCase() === "approved")
+            .reduce((sum, s) => sum + num(s.points_earned), 0);
+          const paidPoints = redemptionsForFab
+            .filter((r) => String(r.status).toLowerCase() === "approved")
+            .reduce((sum, r) => sum + num(r.points ?? r.points_requested), 0);
+          return (
+            <div className={`points-history-card ${isOpen ? "open" : ""}`} key={fab.id}>
+              <button
+                type="button"
+                className="points-history-head"
+                onClick={() => setHistoryFabId(isOpen ? null : fab.id)}
+                aria-expanded={isOpen}
+              >
+                <span><b>{fab.name}</b><small>User ID: {fab.mobile}</small></span>
+                <span className="points-history-summary">{approvedPoints.toLocaleString("en-IN")} approved pts</span>
+                <ChevronDown size={18} className={isOpen ? "history-chevron-up" : ""} />
+              </button>
+              {isOpen && (
+                <div className="points-history-body">
+                  <div className="points-history-stats">
+                    <span>Approved <b>{approvedPoints.toLocaleString("en-IN")} pts</b></span>
+                    <span>Paid / Redeemed <b>{paidPoints.toLocaleString("en-IN")} pts</b></span>
+                    <span>Balance <b>{num(fab.total_points).toLocaleString("en-IN")} pts</b></span>
+                  </div>
+                  {claims.map((claim) => (
+                    <div className="points-history-row" key={claim.id}>
+                      <span><b>{claim.item_name}</b><small>{claim.site_name || "No site"} • {claim.quantity} {claim.unit} • {new Date(claim.created_at || claim.submission_date).toLocaleDateString("en-GB")}</small></span>
+                      <span>{num(claim.points_earned).toLocaleString("en-IN")} pts</span>
+                      <em className={`status-pill ${String(claim.status).toLowerCase()}`}>{claim.status}</em>
+                    </div>
+                  ))}
+                  {redemptionsForFab.map((redemption) => (
+                    <div className="points-history-row redemption" key={redemption.id}>
+                      <span><b>Redemption / Payment</b><small>{redemption.narration || "No payment narration"} • {new Date(redemption.created_at).toLocaleDateString("en-GB")}</small></span>
+                      <span>{num(redemption.points ?? redemption.points_requested).toLocaleString("en-IN")} pts</span>
+                      <em className={`status-pill ${String(redemption.status).toLowerCase()}`}>{redemption.status}</em>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          ))}
+          );
+        })}
       </div>
     );
   }

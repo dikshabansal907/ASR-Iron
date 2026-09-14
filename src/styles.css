@@ -1662,7 +1662,57 @@ textarea:focus {
   to { transform: translateX(-100%); }
 }
 .notification-history-card .notification-target-pill {
-  margin-bottom: 9px !important;
+  display: block !important;
+  width: fit-content !important;
+  margin-bottom: 10px !important;
+}
+
+.points-history-card {
+  margin-bottom: 10px;
+  overflow: hidden;
+  border: 1px solid #dbe4ef;
+  border-radius: 14px;
+  background: #fff;
+}
+.points-history-card.open { border-color: #bfdbfe; }
+.points-history-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 0;
+  background: transparent;
+  color: #0f172a;
+  text-align: left;
+  cursor: pointer;
+}
+.points-history-head b,
+.points-history-head small { display: block; }
+.points-history-head b { font-size: 13px; }
+.points-history-head small { margin-top: 3px; color: #64748b; font-size: 10px; }
+.points-history-summary { color: #166534; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.history-chevron-up { transform: rotate(180deg); }
+.points-history-body { padding: 0 14px 12px; border-top: 1px solid #eef2f7; }
+.points-history-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin: 10px 0; }
+.points-history-stats span { padding: 8px; border-radius: 9px; background: #f8fafc; color: #64748b; font-size: 9px; text-align: center; }
+.points-history-stats b { display: block; margin-top: 3px; color: #0f172a; font-size: 11px; }
+.points-history-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px dashed #e5eaf1; }
+.points-history-row:last-child { border-bottom: 0; }
+.points-history-row b,
+.points-history-row small { display: block; }
+.points-history-row b { font-size: 11px; }
+.points-history-row small { margin-top: 3px; color: #64748b; font-size: 9px; }
+.points-history-row > span:nth-child(2) { color: #0A3E7A; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.points-history-row .status-pill { padding: 4px 7px; font-size: 9px; white-space: nowrap; }
+@media (max-width: 600px) {
+  .points-history-head { grid-template-columns: minmax(0, 1fr) auto; }
+  .points-history-summary { grid-column: 1; grid-row: 2; }
+  .points-history-head > svg { grid-column: 2; grid-row: 1 / 3; }
+  .points-history-stats { grid-template-columns: 1fr; }
+  .points-history-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .points-history-row .status-pill { grid-column: 2; grid-row: 2; justify-self: end; }
 }
 .app-display-form { display: grid; gap: 10px; }
 .app-display-preview {
