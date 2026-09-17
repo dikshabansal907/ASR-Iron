@@ -26,6 +26,7 @@ import {
   Printer,
   ClipboardList,
   Image as ImageIcon,
+  Download,
 } from "lucide-react";
 import { supabase } from "./lib/supabaseClient";
 import {
@@ -443,7 +444,11 @@ export default function App() {
   // Which approved fabricator's history panel is currently expanded (admin view).
   const [openFabId, setOpenFabId] = useState(null),
     [fabSearch, setFabSearch] = useState(""),
-    [historyFabId, setHistoryFabId] = useState(null);
+    [historyFabId, setHistoryFabId] = useState(null),
+    [salesApprovedOpen, setSalesApprovedOpen] = useState(true),
+    [salesRejectedOpen, setSalesRejectedOpen] = useState(false),
+    [fabApprovedOpen, setFabApprovedOpen] = useState(true),
+    [fabRejectedOpen, setFabRejectedOpen] = useState(false);
   const [notifications, setNotifications] = useState([]),
     [newNotification, setNewNotification] = useState({
       target: "all",
@@ -1629,6 +1634,15 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
     );
     setToast(`${f.name} rejected.`);
   }
+  function removeFabricator(f) {
+    askDelete(`Remove ${f.name}?`, async () => {
+      const { error } = await supabase.from("fabricators").delete().eq("id", f.id);
+      if (error) return setToast(error.message);
+      setFabricators((prev) => prev.filter((row) => row.id !== f.id));
+      setSubmissions((prev) => prev.filter((row) => String(row.fabricator_id) !== String(f.id)));
+      setToast(`${f.name} removed.`);
+    });
+  }
   async function approveSub(s) {
     const { error } = await supabase.rpc("approve_submission", {
       p_submission_id: s.id,
@@ -2389,6 +2403,14 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
     setBusinessUsers((prev) => prev.map((b) => b.id === row.id ? { ...b, status: "Rejected" } : b));
     setToast(`${row.business_name} rejected.`);
   }
+  function removeBusiness(row) {
+    askDelete(`Remove ${row.business_name}?`, async () => {
+      const { error } = await supabase.from("business_users").delete().eq("id", row.id);
+      if (error) return setToast(error.message);
+      setBusinessUsers((prev) => prev.filter((business) => business.id !== row.id));
+      setToast(`${row.business_name} removed.`);
+    });
+  }
   async function saveBusinessMargin(row, value) {
     const marginValue = Math.max(0, num(value));
     const { error } = await supabase.rpc("set_business_margin", {
@@ -2409,9 +2431,55 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
     if (error) return setToast(error.message);
     setToast(`Temporary password updated for ${row.business_name}.`);
   }
+  function downloadDatabaseBackup() {
+    const escapeSql = (value) => {
+      if (value === null || value === undefined) return "NULL";
+      if (typeof value === "number" && Number.isFinite(value)) return String(value);
+      return `'${String(value).replace(/'/g, "''")}'`;
+    };
+    const rows = {
+      fabricators: fabricators.map(({ password, ...row }) => row),
+      business_users: businessUsers.map(({ password, ...row }) => row),
+      incentive_items: items,
+      submissions,
+      rate_categories: categories,
+      rate_items: rateItems,
+      redemption_requests: redemptions,
+      order_firms: orderFirms,
+      orders,
+      notifications,
+      app_display_settings: [{ id: true, top_line: displayLine, banner_url: displayBannerUrl }],
+    };
+    const sql = [
+      "-- ASR Iron data backup generated from the admin app",
+      "-- Account passwords are intentionally excluded.",
+      "begin;",
+      ...Object.entries(rows).flatMap(([table, tableRows]) => {
+        if (!tableRows.length) return [`-- ${table}: no rows`];
+        return tableRows.map((row) => {
+          const columns = Object.keys(row).filter((column) => row[column] !== undefined);
+          const values = columns.map((column) => {
+            const value = row[column];
+            return typeof value === "object" && value !== null
+              ? escapeSql(JSON.stringify(value))
+              : escapeSql(value);
+          });
+          return `insert into public.${table} (${columns.map((column) => `"${column}"`).join(", ")}) values (${values.join(", ")}) on conflict do nothing;`;
+        });
+      }),
+      "commit;",
+    ].join("\n");
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([sql], { type: "application/sql" }));
+    link.download = `asr-iron-backup-${new Date().toISOString().slice(0, 10)}.sql`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    setToast("Database backup downloaded.");
+  }
   function salesmenPage() {
     const pending = businessUsers.filter((b) => b.status === "Pending");
     const approved = businessUsers.filter((b) => b.status === "Approved");
+    const rejected = businessUsers.filter((b) => b.status === "Rejected");
     return (
       <div className="grid salesman-admin-page">
         <div className="area">
@@ -2431,12 +2499,15 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
           ))}
         </div>
         <div className="area">
-          <h2 className="section-title"><Calculator size={20} /> Approved SalesMan</h2>
-          {approved.length === 0 ? <div className="empty">No approved Business accounts.</div> : approved.map((b) => (
+          <button type="button" className="account-section-toggle" onClick={() => setSalesApprovedOpen((open) => !open)} aria-expanded={salesApprovedOpen}>
+            <span><Calculator size={18} /> Approved Salesmen</span><ChevronDown size={18} className={salesApprovedOpen ? "section-chevron-up" : ""} />
+          </button>
+          {salesApprovedOpen && (approved.length === 0 ? <div className="empty">No approved Business accounts.</div> : approved.map((b) => (
             <div className="salesman-manage-card" key={b.id}>
               <div className="salesman-manage-head">
                 <div><b>{b.business_name}</b><p>User ID: <strong>{b.user_id}</strong> • {b.mobile}</p></div>
                 <span className="status-pill approved">Approved</span>
+                <button className="icon-delete-btn" onClick={() => removeBusiness(b)} aria-label={`Remove ${b.business_name}`} title="Remove salesman"><Trash2 size={16} /></button>
               </div>
               <div className="salesman-manage-grid">
                 <div className="field">
@@ -2456,14 +2527,24 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
                 </div>
               </div>
             </div>
-          ))}
+          )))}
+          <button type="button" className="account-section-toggle rejected-toggle" onClick={() => setSalesRejectedOpen((open) => !open)} aria-expanded={salesRejectedOpen}>
+            <span>Rejected Salesmen</span><ChevronDown size={18} className={salesRejectedOpen ? "section-chevron-up" : ""} />
+          </button>
+          {salesRejectedOpen && (rejected.length === 0 ? <div className="empty">No rejected Business signups.</div> : rejected.map((b) => (
+            <div className="signup-card rejected-signup-card" key={b.id}>
+              <div><b>{b.business_name}</b><p>User ID: <strong>{b.user_id}</strong></p><p>{b.mobile} • {b.address}</p></div>
+              <span className="status-pill rejected">Rejected</span>
+            </div>
+          )))}
         </div>
       </div>
     );
   }
   function signupsPage() {
     const pending = fabricators.filter((f) => f.status === "Pending"),
-      approved = fabricators.filter((f) => f.status === "Approved");
+      approved = fabricators.filter((f) => f.status === "Approved"),
+      rejected = fabricators.filter((f) => f.status === "Rejected");
     const query = fabSearch.trim().toLowerCase();
     const approvedFabricators = query
       ? approved.filter(
@@ -2506,18 +2587,19 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
           )}
         </div>
         <div className="area">
-          <h2 className="section-title">
-            <UserPlus size={20} /> Approved Fabricators
-          </h2>
-          <input
-            className="input search-box"
-            placeholder="Search fabricator by name or User ID..."
-            value={fabSearch}
-            onChange={(e) => setFabSearch(e.target.value)}
-          />
-          {approvedFabricators.length === 0 ? (
-            <div className="empty">No approved fabricators.</div>
-          ) : (
+          <button type="button" className="account-section-toggle" onClick={() => setFabApprovedOpen((open) => !open)} aria-expanded={fabApprovedOpen}>
+            <span><UserPlus size={18} /> Approved Fabricators</span><ChevronDown size={18} className={fabApprovedOpen ? "section-chevron-up" : ""} />
+          </button>
+          {fabApprovedOpen && <>
+            <input
+              className="input search-box"
+              placeholder="Search fabricator by name or User ID..."
+              value={fabSearch}
+              onChange={(e) => setFabSearch(e.target.value)}
+            />
+            {approvedFabricators.length === 0 ? (
+              <div className="empty">No approved fabricators.</div>
+            ) : (
             approvedFabricators.map((f) => {
               const isOpen = String(openFabId) === String(f.id);
               // All submissions and redemptions belonging to this fabricator,
@@ -2568,6 +2650,7 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
                         size={18}
                         className={`fab-chevron ${isOpen ? "up" : ""}`}
                       />
+                      <span className="fab-manage-remove" onClick={(event) => { event.stopPropagation(); removeFabricator(f); }} title="Remove fabricator" aria-label="Remove fabricator"><Trash2 size={15} /></span>
                     </div>
                   </button>
                   {isOpen && (
@@ -2663,7 +2746,17 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
                 </div>
               );
             })
-          )}
+            )}
+          </>}
+          <button type="button" className="account-section-toggle rejected-toggle" onClick={() => setFabRejectedOpen((open) => !open)} aria-expanded={fabRejectedOpen}>
+            <span>Rejected Fabricators</span><ChevronDown size={18} className={fabRejectedOpen ? "section-chevron-up" : ""} />
+          </button>
+          {fabRejectedOpen && (rejected.length === 0 ? <div className="empty">No rejected fabricator signups.</div> : rejected.map((f) => (
+            <div className="signup-card rejected-signup-card" key={f.id}>
+              <div><b>{f.name}</b><p>{f.mobile} • {f.address}</p></div>
+              <span className="status-pill rejected">Rejected</span>
+            </div>
+          )))}
         </div>
       </div>
     );
@@ -3339,6 +3432,9 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
             </>
           )}
           <button className="btn btn-primary full" disabled={displaySaving}>{displaySaving ? "Saving..." : "Save App Display"}</button>
+          <button type="button" className="btn btn-outline full" onClick={downloadDatabaseBackup}>
+            <Download size={17} /> Download Database Backup
+          </button>
         </form>
       </div>
     );
