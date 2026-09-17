@@ -5633,6 +5633,12 @@ button.fabricator-alert-status-icon.off .fabricator-alert-status-dot {
 .salesman-password-note { display:block; margin-top:6px; color:#64748b; font-size:9px; line-height:1.4; }
 .sales-margin-note { margin:12px 0; padding:10px 12px; border:1px solid #bfdbfe; border-radius:12px; background:#eff6ff; color:#1e3a8a; font-size:11px; font-weight:800; }
 @media (max-width:720px) { .salesman-manage-grid { grid-template-columns:1fr; } }
+@media (min-width:721px) {
+  .salesman-manage-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+}
 /* ASR_BUSINESS_PARTNER_SALESMAN_END */
 
 /* ASR_SALESMAN_MINIMAL_UI_START */
