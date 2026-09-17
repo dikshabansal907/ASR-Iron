@@ -558,6 +558,17 @@ export default function App() {
           (role === "fabricator" && n.target === `fabricator:${user.id}`)),
     );
   }, [notifications, user, hiddenNotificationIds]);
+  const menuRequestCount = (id) => {
+    if (id === "claims")
+      return submissions.filter((row) => row.status === "Pending").length;
+    if (id === "redemptions")
+      return redemptions.filter((row) => String(row.status).toLowerCase() === "pending").length;
+    if (id === "signups")
+      return fabricators.filter((row) => row.status === "Pending").length;
+    if (id === "salesmen")
+      return businessUsers.filter((row) => row.status === "Pending").length;
+    return 0;
+  };
   async function loadNotifications() {
     try {
       const local = JSON.parse(
@@ -3676,7 +3687,10 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
                 }}
               >
                 {item.icon}
-                <span>{item.label}</span>
+                <span className="menu-item-label">{item.label}</span>
+                {menuRequestCount(item.id) > 0 && (
+                  <span className="menu-request-badge">{menuRequestCount(item.id)}</span>
+                )}
               </button>
             ))}
           </div>
@@ -3710,7 +3724,10 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
             }
           >
             {item.icon}
-            <span>{item.label}</span>
+            <span className="menu-item-label">{item.label}</span>
+            {menuRequestCount(item.id) > 0 && (
+              <span className="menu-request-badge">{menuRequestCount(item.id)}</span>
+            )}
           </button>
         ))}
       </div>
@@ -3942,7 +3959,7 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
               }}
             >
               <UserPlus size={18} />
-              Register Business / Partner
+              Register Business / Fabricator
             </button>
           </div>
         </div>
@@ -3956,7 +3973,7 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
           <div className="login-head">
             <Logo />
             <div className="bar" />
-            <p className="subtitle">Business / Partner Sign Up</p>
+            <p className="subtitle">Business / Fabricator Sign Up</p>
           </div>
           <div className="login-body">
             {signupOk ? (
@@ -3977,12 +3994,12 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
               <form onSubmit={handleSignup}>
                 <div className="registration-type-switch">
                   <button type="button" className={signup.registrationType === "business" ? "active" : ""} onClick={() => setSignup({ ...signup, registrationType: "business" })}>Business</button>
-                  <button type="button" className={signup.registrationType === "partner" ? "active" : ""} onClick={() => setSignup({ ...signup, registrationType: "partner" })}>Partner</button>
+                  <button type="button" className={signup.registrationType === "partner" ? "active" : ""} onClick={() => setSignup({ ...signup, registrationType: "partner" })}>Fabricator</button>
                 </div>
                 {signupError && <div className="error">{signupError}</div>}
                 <input
                   className="input"
-                  placeholder={signup.registrationType === "business" ? "Business Name" : "Shop / Partner Name"}
+                  placeholder={signup.registrationType === "business" ? "Business Name" : "Shop / Fabricator Name"}
                   value={signup.name}
                   onChange={(e) =>
                     setSignup({ ...signup, name: e.target.value })
