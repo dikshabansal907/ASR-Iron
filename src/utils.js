@@ -41,6 +41,23 @@ export const num = (v) => Number(v || 0);
 /** Round to the nearest ₹0.05. */
 export const round05 = (v) => Math.round(num(v) * 20) / 20;
 
+export function calculatorQuoteItem(category, size, selection, isSalesman, assignedMargin) {
+  const baseUnitRate = round05(
+    (num(category.daily_rate) + num(size.fixed_difference) + num(category.freight)) * 1.18,
+  );
+  const margin = isSalesman ? num(assignedMargin) : num(selection.margin);
+  const unitRate = round05(baseUnitRate + round05(margin * 1.18));
+  const qty = isSalesman ? 0 : num(selection.qty);
+  return {
+    category: category.name,
+    itemName: selection.itemName.trim(),
+    qty,
+    qtyUnit: selection.qtyUnit || "kg",
+    unitRate,
+    total: qty === 0 ? unitRate : round05(unitRate * qty),
+  };
+}
+
 /** Format a value as Indian-rupee currency (rounded to ₹0.05). */
 export const inr = (v) =>
   `₹${round05(v).toLocaleString("en-IN", {

@@ -11,9 +11,6 @@ import {
   CheckCircle2,
   LogOut,
   UserPlus,
-  Copy,
-  MessageCircle,
-  Send,
   TrendingUp,
   TrendingDown,
   MinusCircle,
@@ -23,19 +20,18 @@ import {
   Megaphone,
   Search,
   ChevronDown,
-  Printer,
   ClipboardList,
   Image as ImageIcon,
   Download,
 } from "lucide-react";
 import { supabase } from "./lib/supabaseClient";
+import CalculatorBrowser from "./CalculatorBrowser";
 import {
   enablePushForUser,
   sendSystemPushNotification,
   getPushPermission,
 } from "./pushNotifications";
 import {
-  asrNaturalSizeCompare,
   asrSortSizes,
   num,
   round05,
@@ -69,298 +65,16 @@ function Logo({ dark = false, loading = false }) {
   );
 }
 export default function App() {
-  /* ASR_SCROLL_UNLOCK_SAFETY_START */
-  // On mobile browsers the add-item modal locks page scrolling; make sure the
-  // lock is always released when the tab/app regains focus or becomes visible.
-  useEffect(() => {
-    const unlockPage = () => {
-      document.documentElement.classList.remove('asr-add-item-lock');
-      document.body.classList.remove('asr-add-item-lock');
-      document.documentElement.style.removeProperty('overflow');
-      document.documentElement.style.removeProperty('position');
-      document.documentElement.style.removeProperty('top');
-      document.documentElement.style.removeProperty('width');
-      document.body.style.removeProperty('overflow');
-      document.body.style.removeProperty('position');
-      document.body.style.removeProperty('top');
-      document.body.style.removeProperty('width');
-    };
-
-    unlockPage();
-    window.addEventListener('pageshow', unlockPage);
-    window.addEventListener('focus', unlockPage);
-    document.addEventListener('visibilitychange', unlockPage);
-
-    return () => {
-      unlockPage();
-      window.removeEventListener('pageshow', unlockPage);
-      window.removeEventListener('focus', unlockPage);
-      document.removeEventListener('visibilitychange', unlockPage);
-    };
-  }, []);
-  /* ASR_SCROLL_UNLOCK_SAFETY_END */
-
-  // Clear every quotation item and reset the editable quote text.
-  // Only the state setters that actually exist in this component are used; the
-  // textarea sweep gives instant visual feedback for the controlled quote field.
   const clearAllQuotes = () => {
     setCart([]);
     setQuoteText("");
     setQuoteEdited(true);
-    document.querySelectorAll("textarea").forEach((ta) => {
-      const meta = [
-        ta.className || "",
-        ta.id || "",
-        ta.name || "",
-        ta.placeholder || "",
-        ta.value || "",
-        ta.parentElement?.textContent || "",
-      ]
-        .join(" ")
-        .toLowerCase();
-      if (
-        meta.includes("quote") ||
-        meta.includes("quotation") ||
-        meta.includes("asr iron") ||
-        meta.includes("share")
-      ) {
-        ta.value = "";
-        ta.dispatchEvent(new Event("input", { bubbles: true }));
-      }
-    });
     setToast("Quotation cleared.");
   };
 
   // Ask for confirmation before clearing all quotation items.
   const asrAskClearAllQuotes = () =>
     askDelete("Delete all added items?", clearAllQuotes);
-
-  // Inject a visible "delete all" trash button next to the Reset/Share buttons.
-  // The share panel is rendered without this button in JSX, so it is added here.
-  useEffect(() => {
-    let stopped = false;
-    const addButton = () => {
-      if (stopped || document.querySelector(".asr-force-clear-btn")) return;
-
-      const buttons = Array.from(document.querySelectorAll("button"));
-      // Prefer the Reset button, but fall back to a share/copy action button.
-      let anchor = buttons.find((btn) => {
-        const text = (btn.textContent || "").toLowerCase().trim();
-        const title = (btn.getAttribute("title") || "").toLowerCase();
-        const label = (btn.getAttribute("aria-label") || "").toLowerCase();
-        return (
-          text.includes("reset") ||
-          title.includes("reset") ||
-          label.includes("reset")
-        );
-      });
-
-      if (!anchor) {
-        anchor = buttons.find((btn) => {
-          const text = (btn.textContent || "").toLowerCase().trim();
-          return (
-            text.includes("share") ||
-            text.includes("whatsapp") ||
-            text.includes("copy")
-          );
-        });
-      }
-      if (!anchor || !anchor.parentElement) return;
-
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "asr-force-clear-btn";
-      btn.title = "Delete all added items";
-      btn.setAttribute("aria-label", "Delete all added items");
-      btn.innerHTML = '<span aria-hidden="true">🗑</span>';
-      btn.addEventListener("click", asrAskClearAllQuotes);
-      anchor.insertAdjacentElement("afterend", btn);
-    };
-
-    addButton();
-    const timer = setInterval(addButton, 700);
-    return () => {
-      stopped = true;
-      clearInterval(timer);
-    };
-  }, []);
-
-  // ASR_QUANTITY_ZERO_RUNTIME_FIX_V2: show quantity 0 as grey and let typing replace it directly.
-  useEffect(() => {
-    const isQuantityInput = (input) => {
-      if (!input || input.tagName !== "INPUT") return false;
-      const meta = [
-        input.id || "",
-        input.name || "",
-        input.placeholder || "",
-        input.getAttribute("aria-label") || "",
-        input.parentElement?.textContent || "",
-        input.closest("label")?.textContent || "",
-        input.closest(".field")?.textContent || "",
-        input.closest("div")?.textContent || "",
-      ]
-        .join(" ")
-        .toLowerCase();
-      return (
-        meta.includes("quantity kg") ||
-        meta.includes("quantity load") ||
-        meta.includes("quantity") ||
-        meta.includes("qty")
-      );
-    };
-
-    const markInput = (input) => {
-      if (!isQuantityInput(input)) return;
-      input.setAttribute("placeholder", "0");
-      input.setAttribute("inputmode", "decimal");
-
-      const syncClass = () => {
-        const value = String(input.value ?? "").trim();
-        if (value === "0" || value === "")
-          input.classList.add("asr-quantity-zero-placeholder");
-        else input.classList.remove("asr-quantity-zero-placeholder");
-      };
-
-      if (!input.dataset.asrQtyZeroFixed) {
-        input.dataset.asrQtyZeroFixed = "true";
-
-        input.addEventListener("focus", () => {
-          if (String(input.value ?? "").trim() === "0") {
-            setTimeout(() => input.select(), 0);
-          }
-          syncClass();
-        });
-
-        input.addEventListener("click", () => {
-          if (String(input.value ?? "").trim() === "0") {
-            setTimeout(() => input.select(), 0);
-          }
-          syncClass();
-        });
-
-        input.addEventListener("input", syncClass);
-        input.addEventListener("blur", syncClass);
-      }
-
-      syncClass();
-    };
-
-    const decorateQuantityInputs = () => {
-      document.querySelectorAll("input").forEach(markInput);
-    };
-
-    decorateQuantityInputs();
-    const timer = setTimeout(decorateQuantityInputs, 100);
-    const observer = new MutationObserver(() =>
-      setTimeout(decorateQuantityInputs, 0),
-    );
-    if (document.body)
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-      });
-    window.addEventListener("resize", decorateQuantityInputs);
-
-    return () => {
-      clearTimeout(timer);
-      observer.disconnect();
-      window.removeEventListener("resize", decorateQuantityInputs);
-    };
-  }, []);
-
-  // ASR_FORCE_TEXTAREA_EXPAND_V4: force editable quote textarea to expand and keep bottom visible.
-  useEffect(() => {
-    let lastTextSnapshot = "";
-
-    const isEditableQuoteTextarea = (el) => {
-      if (!el || el.tagName !== "TEXTAREA") return false;
-      const meta = [
-        el.className || "",
-        el.id || "",
-        el.name || "",
-        el.placeholder || "",
-        el.getAttribute("aria-label") || "",
-        el.parentElement?.textContent || "",
-      ]
-        .join(" ")
-        .toLowerCase();
-      return (
-        meta.includes("quote") ||
-        meta.includes("quotation") ||
-        meta.includes("share") ||
-        meta.includes("editable") ||
-        (el.value || "").includes("ASR Iron")
-      );
-    };
-
-    const resizeOne = (el, revealBottom = false) => {
-      if (!isEditableQuoteTextarea(el)) return;
-
-      const previousHeight = el.offsetHeight || 0;
-      el.style.setProperty("height", "auto", "important");
-      el.style.setProperty("overflow-y", "hidden", "important");
-      el.style.setProperty("max-height", "none", "important");
-      el.style.setProperty("resize", "none", "important");
-
-      const nextHeight = Math.max(el.scrollHeight + 18, 190);
-      el.style.setProperty("height", String(nextHeight) + "px", "important");
-
-      const textChanged = (el.value || "") !== lastTextSnapshot;
-      const grew = nextHeight > previousHeight + 6;
-      if (textChanged) lastTextSnapshot = el.value || "";
-
-      if (
-        (revealBottom || textChanged || grew) &&
-        document.activeElement !== el
-      ) {
-        requestAnimationFrame(() => {
-          try {
-            const rect = el.getBoundingClientRect();
-            const bottomSpace = window.innerHeight - rect.bottom;
-            if (bottomSpace < 95) {
-            }
-          } catch {}
-        });
-      }
-    };
-
-    const resizeAll = (revealBottom = false) => {
-      document
-        .querySelectorAll("textarea")
-        .forEach((el) => resizeOne(el, revealBottom));
-    };
-
-    const onInput = (event) => {
-      if (event.target && event.target.tagName === "TEXTAREA")
-        resizeOne(event.target, true);
-    };
-
-    resizeAll(false);
-    requestAnimationFrame(() => resizeAll(true));
-    const timer1 = setTimeout(() => resizeAll(true), 60);
-    const timer2 = setTimeout(() => resizeAll(true), 250);
-
-    const observer = new MutationObserver(() => {
-      requestAnimationFrame(() => resizeAll(true));
-    });
-    if (document.body)
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        characterData: true,
-      });
-
-    document.addEventListener("input", onInput, true);
-    window.addEventListener("resize", resizeAll);
-
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      observer.disconnect();
-      document.removeEventListener("input", onInput, true);
-      window.removeEventListener("resize", resizeAll);
-    };
-  }, []);
 
   const [screen, setScreen] = useState("login"),
     [user, setUser] = useState(null),
@@ -401,9 +115,6 @@ export default function App() {
   const [adminTab, setAdminTab] = useState("calculator"),
     [fabTab, setFabTab] = useState("apply"),
     [categoryId, setCategoryId] = useState(""),
-    [sizeId, setSizeId] = useState(""),
-    [qty, setQty] = useState(""),
-    [qtyUnit, setQtyUnit] = useState("kg"),
     [margin, setMargin] = useState(() => {
     try {
       return localStorage.getItem('asr_calculator_margin') ?? '';
@@ -414,14 +125,13 @@ export default function App() {
     [cart, setCart] = useState([]),
     [quoteText, setQuoteText] = useState(""),
     [quoteEdited, setQuoteEdited] = useState(false);
+  const [calculatorSelections, setCalculatorSelections] = useState([]);
   const [orderFirms, setOrderFirms] = useState([]),
     [orders, setOrders] = useState([]),
     [orderFirmId, setOrderFirmId] = useState(""),
     [newFirmName, setNewFirmName] = useState(""),
     [orderStatusFilter, setOrderStatusFilter] = useState("Pending"),
     [orderAlert, setOrderAlert] = useState(null);
-  const [sizePickerOpen, setSizePickerOpen] = useState(false),
-    [sizePickerQuery, setSizePickerQuery] = useState("");
   const [newSegment, setNewSegment] = useState({
       name: "",
       rate: "",
@@ -730,18 +440,6 @@ export default function App() {
       );
   }, []);
   useEffect(() => {
-    const clearRestoredCalculator = (event) => {
-      if (!event.persisted) return;
-      setCart([]);
-      setQuoteText("");
-      setQuoteEdited(true);
-      setSizeId("");
-      setQty("");
-    };
-    window.addEventListener("pageshow", clearRestoredCalculator);
-    return () => window.removeEventListener("pageshow", clearRestoredCalculator);
-  }, []);
-  useEffect(() => {
     let startY = 0;
     let startX = 0;
     let tracking = false;
@@ -778,11 +476,6 @@ export default function App() {
       pullRefreshDistanceRef.current = 0;
       setPullRefreshDistance(0);
       if (shouldRefresh) {
-        setCart([]);
-        setQuoteText("");
-        setQuoteEdited(true);
-        setSizeId("");
-        setQty("");
         loadAll();
       }
     };
@@ -886,6 +579,10 @@ export default function App() {
       );
   function logout() {
     localStorage.removeItem("asrLogin");
+    setCalculatorSelections([]);
+    setCart([]);
+    setQuoteText("");
+    setQuoteEdited(true);
     setUser(null);
     setScreen("login");
     setLoginId("");
@@ -1559,41 +1256,14 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
       await loadAll();
     }
   }
-  function addCalc(e) {
-    e.preventDefault();
-    if (!categoryId || !sizeId || Number(qty || 0) < 0) return;
-    const s = rateItems.find((x) => x.id === sizeId),
-      c = getCategory(categoryId);
-    if (!s || !c) return;
-
-    const isSalesCalculator = screen === "salesman" || user?.role === "salesman",
-      assignedSalesMargin = num(activeBusiness?.margin ?? user?.margin),
-      baseUnitRate = unitRate(categoryId, s.fixed_difference),
-      marginValue = isSalesCalculator ? assignedSalesMargin : num(margin),
-      marginWithGst = round05(marginValue * 1.18),
-      finalUnitRate = round05(baseUnitRate + marginWithGst),
-      q = isSalesCalculator ? 0 : Number(qty || 0),
-      total = q === 0 ? finalUnitRate : round05(finalUnitRate * q);
-
-    setCart([
-      ...cart,
-      {
-        id: `cart-${Date.now()}`,
-        category: c.name,
-        itemName: s.name,
-        qty: q,
-        qtyUnit,
-        baseUnitRate,
-        margin: marginValue,
-        marginWithGst,
-        unitRate: finalUnitRate,
-        total,
-      },
+  function addCalculatorSelections(quoteItems) {
+    setCart((previous) => [
+      ...previous,
+      ...quoteItems.map((item) => ({ ...item, id: crypto.randomUUID() })),
     ]);
+    setCalculatorSelections([]);
     setQuoteEdited(false);
-    setSizeId("");
-    setQty("");
-    
+    setToast(`${quoteItems.length} ${quoteItems.length === 1 ? "item" : "items"} added to quotation.`);
   }
   function deleteQuoteRow(item) {
     askDelete(`Delete ${item.itemName}?`, () => {
@@ -2108,234 +1778,23 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
 
   function calculatorPage() {
     const isSalesCalculator = screen === "salesman" || user?.role === "salesman";
-    const assignedSalesMargin = num(activeBusiness?.margin ?? user?.margin);
-    const activeSizes = asrSortSizes(rateItems.filter((x) => x.category_id === categoryId)),
-      sizePickerRows = activeSizes.filter((s) =>
-        String(s.name || "").toLowerCase().includes(sizePickerQuery.trim().toLowerCase()),
-      ),
-      total = cart.reduce((s, i) => s + i.total, 0);
     return (
-      <div className="grid grid-5">
-        <div className="area">
-          <h3 className="section-title">
-            <Calculator size={20} /> Generate New Estimate
-          </h3>
-          <form onSubmit={addCalc}>
-            <div className="field">
-              <label className="label">Step 1: Select Category</label>
-              <select
-                value={categoryId}
-                onChange={(e) => {
-                  setCategoryId(e.target.value);
-                  setSizeId("");
-                  setQty("");
-                  setSizePickerOpen(false);
-                  setSizePickerQuery("");
-                }}
-                required
-              >
-                <option value="">-- Choose Category --</option>
-                {sortedCategories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {categoryId && (
-              <div className="field asr-size-picker-field">
-                <label className="label">Step 2: Choose Size</label>
-                <div className="asr-size-picker-row">
-                  <select
-                    value={sizeId}
-                    onChange={(e) => {
-                      setSizeId(e.target.value);
-                      setQty("");
-                      setSizePickerOpen(false);
-                      setSizePickerQuery("");
-                    }}
-                    required
-                  >
-                    <option value="">-- Select Size --</option>
-                    {activeSizes.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} (Diff: ₹{s.fixed_difference})
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    className="asr-size-picker-search-btn"
-                    aria-label="Search size"
-                    title="Search size"
-                    onClick={() => {
-                      setSizePickerOpen((open) => !open);
-                      setSizePickerQuery("");
-                    }}
-                  >
-                    <Search size={19} strokeWidth={2} aria-hidden="true" />
-                  </button>
-                </div>
-                {sizePickerOpen && (
-<div className="asr-size-picker-popover">
-  <div className="asr-size-picker-head">
-    <div className="asr-size-picker-title">Search Size</div>
-
-    <button
-      type="button"
-      className="asr-size-picker-close"
-      aria-label="Close size search"
-      title="Close"
-      onClick={() => {
-        setSizePickerOpen(false);
-        setSizePickerQuery("");
-      }}
-    >
-      ×
-    </button>
-  </div>
-
-  <input
-    className="asr-size-picker-input"
-    autoFocus
-    placeholder="Type to search size..."
-    value={sizePickerQuery}
-    onChange={(e) => setSizePickerQuery(e.target.value)}
-  />
-                    <div className="asr-size-picker-list">
-                      {sizePickerRows.length === 0 ? (
-                        <div className="asr-size-picker-empty">No matching size</div>
-                      ) : (
-                        sizePickerRows.map((s) => (
-                          <button
-                            type="button"
-                            key={s.id}
-                            className="asr-size-picker-option"
-                            onClick={() => {
-                              setSizeId(s.id);
-                              setQty("");
-                              setSizePickerOpen(false);
-                              setSizePickerQuery("");
-                            }}
-                          >
-                            <span>{s.name}</span>
-                            <small>Diff: ₹{s.fixed_difference}</small>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-{!isSalesCalculator && (
-              <div className="small-card quantity-margin-card">
-                <div className="quantity-margin-grid">
-                  <div className="field">
-                    <label className="label">Step 3: Quantity</label>
-                    <input className="input quantity-input" type="number" inputMode="decimal" min="0" step="0.1" value={qty} placeholder="0" onChange={(e) => setQty(e.target.value)} />
-                  </div>
-                  <div className="field">
-                    <label className="label">Unit</label>
-                    <select className="input quantity-unit-select" value={qtyUnit} onChange={(e) => setQtyUnit(e.target.value)} aria-label="Quantity unit">
-                      <option value="kg">kg</option>
-                      <option value="pcs">pcs</option>
-                      <option value="bundle">bundle</option>
-                    </select>
-                  </div>
-                  <div className="field">
-                    <label className="label">Margin ₹/kg</label>
-                    <input className="input margin-input" type="number" inputMode="decimal" step="0.01" value={margin} placeholder="0" onChange={(e) => {
-                      const nextMargin = e.target.value;
-                      setMargin(nextMargin);
-                      try { localStorage.setItem("asr_calculator_margin", nextMargin); } catch {}
-                    }} />
-                  </div>
-                </div>
-              </div>
-            )}
-            <button
-              className="btn btn-primary full"
-              disabled={!categoryId || !sizeId || Number(qty || 0) < 0}            >
-              Add Item
-            </button>
-          </form>
-        </div>
-        <div className="area quote-summary-area">
-          <h3 className="section-title compact-title">
-            Calculated Quote Summary
-          </h3>
-          {cart.length === 0 ? (
-            <div className="empty compact-empty">
-              <Calculator size={32} />
-              <p>No items added.</p>
-            </div>
-          ) : (
-            <>
-              <div className="quote-mini-list">
-                {cart.map((i) => (
-                  <div className="quote-mini-row" key={i.id}>
-                    <div>
-                      <div className="quote-mini-item">{i.itemName}</div>
-                      <div className="quote-mini-cat">
-                        {i.category} . {inr(i.unitRate)}
-                        {i.qty === 0 ? "" : ` * ${i.qty} ${i.qtyUnit || "kg"}`}
-                      </div>
-                    </div>
-                    <button
-                      className="quote-mini-delete"
-                      onClick={() => deleteQuoteRow(i)}
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <div className="editable-quote">
-                <label className="label">Editable quotation text</label>
-                <textarea
-                  className="input quotation-textarea"
-                  value={quoteText}
-                  onChange={(e) => {
-                    setQuoteText(e.target.value);
-                    setQuoteEdited(true);
-                  }}
-                />
-              </div>
-              <button
-                type="button"
-                className="btn btn-primary full calculator-order-btn"
-                onClick={openOrderPage}
-                disabled={!cart.length}
-              >
-                Place Order
-              </button>
-              <div className="share-panel compact-share">
-                <button className="share-btn copy" onClick={copyQuote}>
-                  <Copy size={15} />
-                  <span>Copy</span>
-                </button>
-                <button className="share-btn whatsapp" onClick={whatsapp}>
-                  <MessageCircle size={15} />
-                  <span>WhatsApp</span>
-                </button>
-                <button className="share-btn native" onClick={nativeShare}>
-                  <Send size={15} />
-                  <span>Share</span>
-                </button>
-                <button className="share-btn print" onClick={printQuote}>
-                  <Printer size={15} />
-                  <span>Print</span>
-                </button>
-                <button className="share-btn reset" onClick={resetQuote}>
-                  <X size={15} />
-                  <span>Reset</span>
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
+      <CalculatorBrowser
+        categories={sortedCategories} sizes={rateItems}
+        categoryId={categoryId} onCategoryChange={setCategoryId}
+        selections={calculatorSelections} setSelections={setCalculatorSelections}
+        isAdmin={user?.role === "admin"} isSalesman={isSalesCalculator}
+        assignedMargin={num(activeBusiness?.margin ?? user?.margin)}
+        defaultMargin={margin} onDefaultMarginChange={(value) => {
+          setMargin(value);
+          try { localStorage.setItem("asr_calculator_margin", value); } catch {}
+        }}
+        onAdd={addCalculatorSelections} cart={cart} quoteText={quoteText}
+        onQuoteChange={(text) => { setQuoteText(text); setQuoteEdited(true); }}
+        onDeleteRow={deleteQuoteRow} onDeleteAll={asrAskClearAllQuotes}
+        onCopy={copyQuote} onWhatsapp={whatsapp} onShare={nativeShare}
+        onPrint={printQuote} onReset={resetQuote} onOrder={openOrderPage}
+      />
     );
   }
   function itemsPage() {
@@ -3895,9 +3354,7 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
           {isAdmin &&
             ["calculator", "market", "daily"].includes(tab) &&
             ticker()}
-          {isAdmin && tab === "calculator" && (
-            <div className="area">{calculatorPage()}</div>
-          )}
+          {isAdmin && tab === "calculator" && calculatorPage()}
           {isAdmin && tab === "market" && marketPage()}
           {isAdmin && tab === "daily" && dailyPage()}
           {isAdmin && tab === "orders" && orderPage()}
