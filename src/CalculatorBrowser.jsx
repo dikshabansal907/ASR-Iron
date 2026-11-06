@@ -128,8 +128,8 @@ export default function CalculatorBrowser({
         </div>
         <section className="estimate-quotation" aria-labelledby="estimate-quotation-title">
           <div className="estimate-section-heading"><h3 id="estimate-quotation-title">Editable Quotation</h3><span>{cart.length} items</span></div>
-          {cart.length > 0 && <div className="estimate-quote-items">{cart.map((item) => <div className="estimate-quote-row" key={item.id}><span><b>{item.itemName}</b><small>{item.category} / {inr(item.unitRate)}{item.qty > 0 ? ` x ${item.qty} ${item.qtyUnit}` : ""}</small></span><button type="button" className="estimate-icon-button" onClick={() => onDeleteRow(item)} title="Delete quotation item" aria-label={`Delete ${item.itemName}`}><Trash2 size={16} /></button></div>)}</div>}
-          <textarea className="estimate-quote-editor" aria-label="Editable quotation text" rows={12} value={quoteText} onChange={(event) => onQuoteChange(event.target.value)} placeholder="Your quotation" />
+          {cart.length > 0 && <div className="estimate-quote-items" role="region" aria-label="Quotation items" tabIndex={0}>{cart.map((item) => <div className="estimate-quote-row" key={item.id}><span><b>{item.itemName}</b><small>{item.category} / {inr(item.unitRate)}{item.qty > 0 ? ` x ${item.qty} ${item.qtyUnit}` : ""}</small></span><button type="button" className="estimate-icon-button" onClick={() => onDeleteRow(item)} title="Delete quotation item" aria-label={`Delete ${item.itemName}`}><Trash2 size={16} /></button></div>)}</div>}
+          <textarea className="estimate-text-editor" aria-label="Editable quotation text" rows={12} value={quoteText} onChange={(event) => onQuoteChange(event.target.value)} placeholder="Your quotation" />
           <div className="estimate-share-actions">
             <button type="button" onClick={onCopy} disabled={!quoteText.trim()}><Copy size={17} />Copy</button>
             <button type="button" onClick={onWhatsapp} disabled={!quoteText.trim()}><MessageCircle size={17} />WhatsApp</button>

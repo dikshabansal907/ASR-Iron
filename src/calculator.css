@@ -27,24 +27,25 @@
 .estimate-section-heading { margin-bottom: 14px; }
 .estimate-section-heading h3 { font-size: 16px; margin: 0; }
 .estimate-section-heading > span { font-size: 12px; color: #536274; flex-shrink: 0; }
-.estimate-category-strip { display: flex; gap: 8px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; padding: 2px 2px 12px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
-.estimate-category { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 46px; flex: 0 0 auto; max-width: 100%; padding: 10px 16px; border: 1px solid #cbd6e1; border-radius: 24px; background: #fff; color: var(--estimate-blue); font-size: 14px; font-weight: 700; scroll-snap-align: start; }
+.estimate-catalog > section:first-child .estimate-section-heading { margin-bottom: 8px; }
+.estimate-category-strip { display: flex; gap: 8px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; padding: 2px 2px 6px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+.estimate-category { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; flex: 0 0 auto; max-width: 100%; padding: 6px 12px; border: 1px solid #cbd6e1; border-radius: 24px; background: #fff; color: var(--estimate-blue); font-size: 14px; font-weight: 700; scroll-snap-align: start; }
 .estimate-category > span:first-child { overflow-wrap: anywhere; }
 .estimate-category.active { background: var(--estimate-blue); color: #fff; border-color: var(--estimate-blue); }
 .estimate-browser .estimate-count { display: inline-flex; align-items: center; gap: 3px; justify-content: center; min-width: 25px; min-height: 24px; padding: 3px 7px; background: #ffdf97; color: #573600; border-radius: 6px; font-size: 12px; font-weight: 800; }
-.estimate-products { margin-top: 20px; }
+.estimate-products { margin-top: 12px; }
 .estimate-search { display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #b9c9d8; margin-bottom: 16px; color: #596e82; }
 .estimate-search input { width: 100%; min-height: 46px; background: transparent; padding: 10px 0; border: 0; outline: 0; font-size: 16px; color: var(--estimate-ink); }
 .estimate-search:focus-within { border-color: var(--estimate-blue); box-shadow: 0 2px var(--estimate-blue); }
 .estimate-product-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .estimate-product { text-align: left; min-height: 118px; display: flex; flex-direction: column; gap: 12px; border: 1.5px solid var(--estimate-line); border-radius: 8px; background: #fff; padding: 14px; color: var(--estimate-ink); transition: border-color .15s, background-color .15s; }
 .estimate-product.selected { border-color: var(--estimate-blue); background: #e7f2ff; }
-.estimate-product-top { width: 100%; color: #657f98; }
+.estimate-product-top { width: 100%; gap: 6px; color: #657f98; }
 .estimate-product.selected .estimate-product-top { color: var(--estimate-blue); }
 .estimate-check { width: 24px; height: 24px; display: grid; place-items: center; border: 1px solid #c6d4e0; border-radius: 50%; }
 .selected .estimate-check { background: var(--estimate-blue); border-color: var(--estimate-blue); color: #fff; }
 .estimate-product strong { font-size: 15px; line-height: 1.4; overflow-wrap: anywhere; }
-.estimate-product-rate { margin-top: auto; font-size: 14px; font-weight: 700; }
+.estimate-product-rate { margin-top: auto; font-size: 14px; font-weight: 700; overflow-wrap: anywhere; }
 .estimate-product-rate small { color: #64748b; font-size: 11px; font-weight: 400; }
 .estimate-default-margin { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 12px; font-weight: 700; color: var(--estimate-blue); }
 .estimate-margin-control { display: flex; align-items: center; width: 116px; height: 44px; padding: 0 8px; gap: 4px; border: 1px solid #b8cbdc; border-radius: 6px; background: #fff; }
@@ -67,11 +68,12 @@
 .estimate-primary { background: var(--estimate-gold); color: #302107; }
 .estimate-primary svg { flex-shrink: 0; }
 .estimate-quotation { border-left: 1px solid var(--estimate-line); padding-left: 24px; }
-.estimate-quote-items { margin-bottom: 16px; }
+.estimate-quote-items { margin-bottom: 16px; max-height: 320px; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+.estimate-quote-items:focus-visible { outline: 2px solid var(--estimate-blue); outline-offset: 3px; }
 .estimate-quote-row { border-bottom: 1px solid var(--estimate-line); padding: 8px 0; }
 .estimate-quote-row b { display: block; font-size: 13px; overflow-wrap: anywhere; }
 .estimate-quote-row small { display: block; color: #536274; font-size: 11px; margin-top: 5px; }
-.estimate-browser .estimate-quote-editor { width: 100%; min-height: 280px; max-height: 65vh; padding: 16px; background: #fff; border: 1px solid #c5d2df; border-radius: 8px; font-size: 14px; line-height: 1.7; resize: vertical; overflow-y: auto; color: var(--estimate-ink); }
+.estimate-browser .estimate-text-editor { width: 100%; height: 320px; min-height: 180px; max-height: 65vh; padding: 16px; background: #fff; border: 1px solid #c5d2df; border-radius: 8px; font-size: 14px; line-height: 1.7; resize: vertical !important; overflow-y: auto !important; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; color: var(--estimate-ink); }
 .estimate-share-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 12px; }
 .estimate-share-actions button { min-height: 46px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; padding: 10px 4px; background: #fff; border: 1px solid var(--estimate-line); border-radius: 6px; color: var(--estimate-blue); font-weight: 700; font-size: 12px; }
 .estimate-quote-tools { display: flex; justify-content: flex-end; gap: 6px; margin: 8px 0; }
@@ -90,6 +92,7 @@
   .estimate-product { padding: 12px; }
 }
 @media (max-width: 370px) {
-  .estimate-product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .estimate-product-grid { gap: 6px; }
+  .estimate-product { padding: 8px; gap: 10px; }
   .estimate-primary { padding: 12px 8px; font-size: 13px; }
 }
