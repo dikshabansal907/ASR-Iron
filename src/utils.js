@@ -58,6 +58,28 @@ export function calculatorQuoteItem(category, size, selection, isSalesman, assig
   };
 }
 
+export function calculatorReviewItem(category, size, selection, isSalesman, assignedMargin) {
+  const replaceMargin = !isSalesman && selection.margin !== "" && selection.margin != null;
+  if (replaceMargin && (!category || !size)) return null;
+  const qty = isSalesman ? 0 : num(selection.qty);
+  const quote = replaceMargin
+    ? calculatorQuoteItem(category, size, selection, false, assignedMargin)
+    : {
+      category: selection.category,
+      itemName: selection.itemName.trim(),
+      qty,
+      qtyUnit: selection.qtyUnit || "kg",
+      unitRate: num(selection.unitRate),
+      total: qty === 0 ? num(selection.unitRate) : round05(num(selection.unitRate) * qty),
+    };
+  return {
+    id: selection.id,
+    categoryId: selection.categoryId,
+    rateItemId: selection.rateItemId,
+    ...quote,
+  };
+}
+
 /** Format a value as Indian-rupee currency (rounded to ₹0.05). */
 export const inr = (v) =>
   `₹${round05(v).toLocaleString("en-IN", {

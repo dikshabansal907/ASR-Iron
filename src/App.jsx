@@ -1265,6 +1265,11 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
     setQuoteEdited(false);
     setToast(`${quoteItems.length} ${quoteItems.length === 1 ? "item" : "items"} added to quotation.`);
   }
+  function updateCalculatorQuotation(quoteItems) {
+    setCart(quoteItems);
+    setQuoteEdited(false);
+    setToast("Quotation updated.");
+  }
   function deleteQuoteRow(item) {
     askDelete(`Delete ${item.itemName}?`, () => {
       setCart(cart.filter((x) => x.id !== item.id));
@@ -1789,7 +1794,7 @@ const { data: businessRows, error: businessError } = await supabase.rpc("login_b
           setMargin(value);
           try { localStorage.setItem("asr_calculator_margin", value); } catch {}
         }}
-        onAdd={addCalculatorSelections} cart={cart} quoteText={quoteText}
+        onAdd={addCalculatorSelections} onUpdate={updateCalculatorQuotation} cart={cart} quoteText={quoteText}
         onQuoteChange={(text) => { setQuoteText(text); setQuoteEdited(true); }}
         onDeleteRow={deleteQuoteRow} onDeleteAll={asrAskClearAllQuotes}
         onCopy={copyQuote} onWhatsapp={whatsapp} onShare={nativeShare}
