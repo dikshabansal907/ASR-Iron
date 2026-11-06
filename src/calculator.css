@@ -74,7 +74,7 @@
 .estimate-quote-row b { display: block; font-size: 13px; overflow-wrap: anywhere; }
 .estimate-quote-row small { display: block; color: #536274; font-size: 11px; margin-top: 5px; }
 .estimate-browser .estimate-text-editor { width: 100%; height: 320px; min-height: 180px; max-height: 65vh; padding: 16px; background: #fff; border: 1px solid #c5d2df; border-radius: 8px; font-size: 14px; line-height: 1.7; resize: vertical !important; overflow-y: auto !important; overscroll-behavior-y: contain; -webkit-overflow-scrolling: touch; color: var(--estimate-ink); }
-.estimate-share-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 12px; }
+.estimate-share-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 12px; margin-bottom: 12px; }
 .estimate-share-actions button { min-height: 46px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 6px; padding: 10px 4px; background: #fff; border: 1px solid var(--estimate-line); border-radius: 6px; color: var(--estimate-blue); font-weight: 700; font-size: 12px; }
 .estimate-quote-tools { display: flex; justify-content: flex-end; gap: 6px; margin: 8px 0; }
 .estimate-order { background: var(--estimate-blue); color: #fff; }
